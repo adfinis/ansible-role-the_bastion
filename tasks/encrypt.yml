@@ -1,0 +1,64 @@
+---
+# Encrypt /home directory (optional but recommended)
+
+- name: encrypt | Check if /home is already encrypted
+  ansible.builtin.command:
+    cmd: lsblk -f
+  register: lsblk_output
+  changed_when: false
+  tags: bastion_check_encryption
+
+- name: encrypt | Set encryption status fact
+  ansible.builtin.set_fact:
+    home_already_encrypted: "{{ 'crypto_LUKS' in lsblk_output.stdout }}"
+  tags: bastion_check_encryption
+
+- name: encrypt | Validate encryption passphrase
+  ansible.builtin.assert:
+    that:
+      - bastion_encryption_passphrase is defined
+      - bastion_encryption_passphrase | length > 8
+    fail_msg: "bastion_encryption_passphrase must be defined and at least 8 characters long when bastion_encrypt_home is true"
+  when:
+    - bastion_encrypt_home | bool
+    - not home_already_encrypted | bool
+  tags: bastion_validate_passphrase
+
+- name: encrypt | Warning about encryption
+  ansible.builtin.debug:
+    msg:
+      - "WARNING: You are about to encrypt /home directory. This process:"
+      - 1. Will move existing /home data to temporary location
+      - 2. Create encrypted filesystem
+      - 3. Restore data to encrypted /home
+      - 4. Requires the passphrase at every boot
+      - Make sure you have the passphrase securely stored!
+  when:
+    - bastion_encrypt_home | bool
+    - not home_already_encrypted | bool
+  tags: bastion_encryption_warning
+
+- name: encrypt | Run home encryption setup script
+  ansible.builtin.expect:
+    command: "{{ bastion_install_dir }}/bin/admin/setup-encryption.sh"
+    responses:
+      "Enter passphrase for.*": "{{ bastion_encryption_passphrase }}"
+      "Verify passphrase:": "{{ bastion_encryption_passphrase }}"
+      "Are you sure.*": "YES"
+    timeout: 300
+    creates: /etc/crypttab
+  when:
+    - bastion_encrypt_home | bool
+    - not home_already_encrypted | bool
+  register: bastion_encryption_result
+  tags: bastion_run_encryption
+
+- name: encrypt | Update initramfs after encryption setup
+  ansible.builtin.command:
+    cmd: update-initramfs -u
+  changed_when: true
+  when:
+    - bastion_encrypt_home | bool
+    - bastion_encryption_result is changed
+    - ansible_os_family == "Debian"
+  tags: bastion_update_initramfs

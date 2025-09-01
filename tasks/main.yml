@@ -1,0 +1,79 @@
+---
+# Main tasks for the_bastion role
+
+- name: Validate supported OS
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family == "Debian"
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version in ["12", "13"]
+    fail_msg: "This role only supports Debian 12 and 13"
+  tags: always
+
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  tags: always
+
+- name: Include version detection and comparison tasks
+  ansible.builtin.include_tasks: version.yml
+  tags: always
+
+- name: Validate required variables for new installation
+  ansible.builtin.assert:
+    that:
+      - bastion_first_admin.username is defined and bastion_first_admin.username | length > 0
+      - bastion_first_admin.ssh_public_key is defined and bastion_first_admin.ssh_public_key | length > 0
+    fail_msg: "bastion_first_admin.username and bastion_first_admin.ssh_public_key must be defined for new installations"
+  when: bastion_effective_install_mode == "new"
+  tags: always
+
+- name: Include OS preparation tasks
+  ansible.builtin.include_tasks: prepare_os.yml
+  tags:
+    - bastion
+    - bastion_prepare
+
+- name: Include backup tasks for upgrade
+  ansible.builtin.include_tasks: backup.yml
+  when:
+    - bastion_effective_install_mode == "upgrade"
+    - bastion_upgrade_backup_before | bool
+  tags:
+    - bastion
+    - bastion_backup
+
+- name: Include source code download tasks
+  ansible.builtin.include_tasks: download.yml
+  when: bastion_effective_install_mode != "skip"
+  tags:
+    - bastion
+    - bastion_download
+
+- name: Include package installation tasks
+  ansible.builtin.include_tasks: install_packages.yml
+  when: bastion_effective_install_mode != "skip"
+  tags:
+    - bastion
+    - bastion_packages
+
+- name: Include home encryption tasks
+  ansible.builtin.include_tasks: encrypt.yml
+  when:
+    - bastion_encrypt_home | bool
+    - bastion_effective_install_mode == "new"
+  tags:
+    - bastion
+    - bastion_encrypt
+
+- name: Include bastion configuration tasks
+  ansible.builtin.include_tasks: configure.yml
+  tags:
+    - bastion
+    - bastion_configure
+
+- name: Include first admin account creation tasks
+  ansible.builtin.include_tasks: create_admin.yml
+  when: bastion_effective_install_mode == "new"
+  tags:
+    - bastion
+    - bastion_admin

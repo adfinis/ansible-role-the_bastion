@@ -1,0 +1,92 @@
+---
+# Download The Bastion source code
+
+- name: download | Update git repository (upgrade mode with git)
+  ansible.builtin.git:
+    repo: "{{ bastion_github_repo }}"
+    dest: "{{ bastion_install_dir }}"
+    version: "{{ bastion_version }}"
+    force: true
+  when:
+    - bastion_effective_install_mode == "upgrade"
+    - bastion_install_method == "git"
+  tags: bastion_update_git
+
+- name: download | Download The Bastion tarball
+  ansible.builtin.get_url:
+    url: "https://github.com/ovh/the-bastion/archive/refs/tags/{{ bastion_version }}.tar.gz"
+    dest: "/tmp/the-bastion-{{ bastion_version }}.tar.gz"
+    mode: "0644"
+    timeout: 300
+  changed_when: false
+  when:
+    - bastion_install_method == "tarball"
+    - bastion_effective_install_mode == "new" or (bastion_effective_install_mode == "upgrade" and bastion_install_method == "tarball")
+  tags: bastion_download_tarball
+
+- name: download | Create bastion directory (new installation)
+  ansible.builtin.file:
+    path: "{{ bastion_install_dir }}"
+    state: directory
+    mode: "0755"
+  when: bastion_effective_install_mode == "new"
+  tags: bastion_create_dir
+
+- name: download | Extract The Bastion tarball (new installation)
+  ansible.builtin.unarchive:
+    src: "/tmp/the-bastion-{{ bastion_version }}.tar.gz"
+    dest: "{{ bastion_install_dir }}"
+    remote_src: true
+    creates: "{{ bastion_install_dir }}/bin"
+    extra_opts: ["--strip-components=1"]
+    mode: "0755"
+    owner: root
+    group: root
+  when:
+    - bastion_install_method == "tarball"
+    - bastion_effective_install_mode == "new"
+  tags: bastion_extract_tarball
+
+- name: download | Extract The Bastion tarball (upgrade)
+  ansible.builtin.unarchive:
+    src: "/tmp/the-bastion-{{ bastion_version }}.tar.gz"
+    dest: "{{ bastion_install_dir }}"
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
+    mode: "0755"
+    owner: root
+    group: root
+  when:
+    - bastion_install_method == "tarball"
+    - bastion_effective_install_mode == "upgrade"
+  tags: bastion_extract_tarball
+
+- name: download | Clone The Bastion repository (new installation)
+  ansible.builtin.git:
+    repo: "{{ bastion_github_repo }}"
+    dest: "{{ bastion_install_dir }}"
+    version: "{{ bastion_version }}"
+    force: true
+  when:
+    - bastion_install_method == "git"
+    - bastion_effective_install_mode == "new"
+  tags: bastion_clone_git
+
+- name: download | Clean up downloaded tarball
+  ansible.builtin.file:
+    path: "/tmp/the-bastion-{{ bastion_version }}.tar.gz"
+    state: absent
+  when: bastion_install_method == "tarball"
+  changed_when: false
+  tags: bastion_cleanup
+
+- name: download | Verify installation directory structure
+  ansible.builtin.stat:
+    path: "{{ bastion_install_dir }}/{{ item }}"
+  register: bastion_dirs
+  loop:
+    - bin
+    - lib
+    - etc
+  failed_when: not bastion_dirs.stat.exists
+  tags: bastion_verify_structure

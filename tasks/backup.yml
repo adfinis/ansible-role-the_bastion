@@ -1,0 +1,51 @@
+---
+# Backup tasks before upgrade
+
+- name: backup | Create backup directory
+  ansible.builtin.file:
+    path: /root/backups/bastion-backup-{{ ansible_date_time.epoch }}
+    state: directory
+    mode: '0700'
+  register: backup_dir
+  tags: bastion_backup_create
+
+- name: backup | Backup bastion configuration
+  ansible.builtin.copy:
+    src: /etc/bastion/
+    dest: "{{ backup_dir.path }}/etc-bastion/"
+    remote_src: true
+    mode: preserve
+  tags: bastion_backup_config
+
+- name: backup | Backup current bastion installation
+  ansible.builtin.copy:
+    src: "{{ bastion_install_dir }}/"
+    dest: "{{ backup_dir.path }}/opt-bastion/"
+    remote_src: true
+    mode: preserve
+  tags: bastion_backup_install
+
+- name: backup | Backup SSH configuration
+  ansible.builtin.copy:
+    src: /etc/ssh/
+    dest: "{{ backup_dir.path }}/etc-ssh/"
+    remote_src: true
+    mode: preserve
+  tags: bastion_backup_ssh
+
+- name: backup | Create info file
+  ansible.builtin.copy:
+    content: |
+      Bastion backup created: {{ ansible_date_time.iso8601 }}
+      Original installation: {{ bastion_install_dir }}
+      Upgrading from: {{ bastion_current_version | default('unknown') }}
+      Upgrading to: {{ bastion_version }}
+      Backup created by: adfinis.the_bastion
+    dest: "{{ backup_dir.path }}/backup-info.txt"
+    mode: '0644'
+  tags: bastion_backup_info
+
+- name: backup | Display location
+  ansible.builtin.debug:
+    msg: "Backup created at: {{ backup_dir.path }}"
+  tags: bastion_backup_info

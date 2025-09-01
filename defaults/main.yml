@@ -1,0 +1,50 @@
+---
+# Default variables for the_bastion role
+
+# Installation directory for The Bastion
+bastion_install_dir: /opt/bastion
+
+# The Bastion version to install (latest release tag)
+bastion_version: "v3.21.00"
+
+# Whether to use git clone or tarball installation
+bastion_install_method: tarball  # or 'git'
+
+# GitHub repository for The Bastion
+bastion_github_repo: "https://github.com/ovh/the-bastion"
+
+# Whether to install syslog-ng (recommended)
+bastion_install_syslog_ng: true
+
+# Whether to install development packages (not recommended for production)
+bastion_install_dev_packages: false
+
+# Whether to encrypt /home directory
+bastion_encrypt_home: false
+
+# Encryption passphrase (only used if bastion_encrypt_home is true)
+bastion_encryption_passphrase: ""
+
+# First admin account configuration (only used for new installations)
+bastion_first_admin:
+  username: ""
+  ssh_public_key: ""
+
+# Additional configuration options for /etc/bastion/bastion.conf
+bastion_config:
+  bastionName: "SensFortress"
+
+# Whether to install optional tools
+bastion_install_yubico_piv_checker: false
+bastion_install_mkhash_helper: false
+
+# SSH hardening settings (only for new installations)
+bastion_harden_ssh: true
+bastion_regenerate_host_keys: true
+
+# Backup configuration
+bastion_backup_encryption_enabled: true
+
+# Upgrade specific settings
+bastion_upgrade_backup_before: true
+bastion_upgrade_use_managed: false  # Use --managed-upgrade instead of --upgrade

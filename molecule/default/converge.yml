@@ -1,0 +1,49 @@
+---
+- name: Converge - New Installation
+  hosts: new_install
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+
+    - name: Install Python expect module
+      ansible.builtin.package:
+        name: python3-pexpect
+        state: present
+
+  roles:
+    - role: adfinis.the_bastion
+
+- name: Converge - Upgrade Test (First Install Old Version)
+  hosts: upgrade_test
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+
+    - name: Install Python expect module
+      ansible.builtin.package:
+        name: python3-pexpect
+        state: present
+
+  tasks:
+    # First install an older version for upgrade testing
+    - name: Install older version first
+      ansible.builtin.include_role:
+        name: adfinis.the_bastion
+      vars:
+        bastion_version: "v3.20.00"
+      tags: molecule-idempotence-notest
+
+    # Then upgrade to the newer version
+    - name: Upgrade to newer version
+      ansible.builtin.include_role:
+        name: adfinis.the_bastion
+      vars:
+        bastion_version: "v3.21.00"

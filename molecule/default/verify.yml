@@ -1,0 +1,151 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check that The Bastion is installed
+      ansible.builtin.stat:
+        path: /opt/bastion/bin
+      register: bastion_binary
+
+    - name: Verify bastion binary directory exists
+      ansible.builtin.assert:
+        that:
+          - bastion_binary.stat.exists
+          - bastion_binary.stat.isdir
+        fail_msg: "The Bastion binary directory does not exist"
+
+    - name: Check bastion configuration file
+      ansible.builtin.stat:
+        path: /etc/bastion/bastion.conf
+      register: bastion_config_file
+
+    - name: Verify bastion configuration exists
+      ansible.builtin.assert:
+        that:
+          - bastion_config_file.stat.exists
+        fail_msg: "The Bastion configuration file does not exist"
+
+    - name: Check that admin account was created (new installations only)
+      ansible.builtin.command:
+        cmd: getent passwd bastionadmin
+      register: admin_account
+      changed_when: false
+      failed_when: false
+
+    - name: Verify admin account exists (new installations)
+      ansible.builtin.assert:
+        that:
+          - admin_account.rc == 0
+        fail_msg: "Admin account was not created"
+      when: inventory_hostname in groups['new_install'] | default([])
+
+    - name: Check SSH service is running
+      ansible.builtin.service_facts:
+
+    - name: Verify SSH service is running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['ssh.service'].state == 'running'
+        fail_msg: "SSH service is not running"
+
+    - name: Check ttyrec is installed
+      ansible.builtin.command:
+        cmd: which ttyrec
+      register: ttyrec_check
+      changed_when: false
+
+    - name: Verify ttyrec is installed
+      ansible.builtin.assert:
+        that:
+          - ttyrec_check.rc == 0
+        fail_msg: "ttyrec is not installed"
+
+    - name: Test bastion perl modules
+      ansible.builtin.command:
+        cmd: /opt/bastion/bin/dev/perl-check.sh
+      register: perl_check
+      changed_when: false
+
+    - name: Verify perl modules are working
+      ansible.builtin.assert:
+        that:
+          - perl_check.rc == 0
+        fail_msg: "Perl modules check failed"
+
+    - name: Check bastion version file exists
+      ansible.builtin.stat:
+        path: /etc/bastion/version
+      register: bastion_version_file
+
+    - name: Verify bastion version file exists
+      ansible.builtin.assert:
+        that:
+          - bastion_version_file.stat.exists
+        fail_msg: "The Bastion version file does not exist"
+
+    - name: Read bastion version file content
+      ansible.builtin.slurp:
+        src: /etc/bastion/version
+      register: bastion_version_content
+
+    - name: Verify version file contains expected version
+      ansible.builtin.assert:
+        that:
+          - (bastion_version_content.content).strip() | b64decode in ['v3.20.00', 'v3.21.00']
+        fail_msg: "Version file does not contain expected version"
+
+    - name: Check current bastion version  # noqa: command-instead-of-module
+      ansible.builtin.command:
+        cmd: git -C /opt/bastion describe --tags --exact-match HEAD
+      register: current_version
+      changed_when: false
+      failed_when: false
+      when: inventory_hostname in groups['upgrade_test'] | default([])
+
+    - name: Verify version for upgrade test
+      ansible.builtin.assert:
+        that:
+          - "'v3.21.00' in current_version.stdout"
+        fail_msg: "Upgrade did not result in expected version"
+      when: inventory_hostname in groups['upgrade_test'] | default([])
+
+    - name: Check for backup directory (upgrade test only)
+      ansible.builtin.find:
+        paths: /root
+        patterns: "bastion-backup-*"
+        file_type: directory
+      register: backup_dirs
+      when: inventory_hostname in groups['upgrade_test'] | default([])
+
+    - name: Verify backup was created during upgrade
+      ansible.builtin.assert:
+        that:
+          - backup_dirs.files | length > 0
+        fail_msg: "Backup directory was not created during upgrade"
+      when: inventory_hostname in groups['upgrade_test'] | default([])
+
+    - name: Check bastion home directory structure
+      ansible.builtin.stat:
+        path: "/home/{{ item }}"
+      register: bastion_dirs
+      loop:
+        - bastionadmin
+        - keykeeper
+        - allowkeeper
+        - healthcheck
+        - bastionsync
+        - keyreader
+        - logkeeper
+        - passkeeper
+        - proxyhttp
+      failed_when: false
+
+    - name: Verify bastion directories exist (new installations)
+      ansible.builtin.assert:
+        that:
+          - bastion_dirs.results[0].stat.exists  # bastionadmin home should exist
+        fail_msg: "Bastion admin home directory does not exist"
+      when: inventory_hostname in groups['new_install'] | default([])

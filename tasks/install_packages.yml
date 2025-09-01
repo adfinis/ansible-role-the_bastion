@@ -1,0 +1,45 @@
+---
+# Install required packages for The Bastion
+
+- name: install_packages | Run The Bastion package check script
+  ansible.builtin.command:
+    cmd: >-
+      {{ bastion_install_dir }}/bin/admin/packages-check.sh -i
+      {{ '-s' if bastion_install_syslog_ng else '' }}
+      {{ '-d' if bastion_install_dev_packages else '' }}
+    creates: /etc/bastion/.packages_checked
+  register: bastion_packages_check
+  tags: bastion_packages_check
+
+- name: install_packages | Create packages check marker
+  ansible.builtin.file:
+    path: /etc/bastion/.packages_checked
+    state: touch
+    mode: '0644'
+  when:
+    - bastion_packages_check is succeeded
+    - bastion_packages_check.changed
+  tags: bastion_packages_marker
+
+- name: install_packages | Install ovh-ttyrec
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/admin/install-ttyrec.sh -a"
+    creates: /usr/bin/ttyrec
+  register: bastion_ttyrec_install
+  tags: bastion_install_ttyrec
+
+- name: install_packages | Install yubico-piv-checker (optional)
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/admin/install-yubico-piv-checker.sh -a"
+    creates: /usr/local/bin/yubico-piv-checker
+  when: bastion_install_yubico_piv_checker | bool
+  register: bastion_yubico_install
+  tags: bastion_install_yubico
+
+- name: install_packages | Install mkhash-helper (optional)
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/admin/install-mkhash-helper.sh -a"
+    creates: /usr/local/bin/the-bastion-mkhash-helper
+  when: bastion_install_mkhash_helper | bool
+  register: bastion_mkhash_install
+  tags: bastion_install_mkhash

@@ -1,0 +1,13 @@
+---
+# Handlers for the_bastion role
+
+- name: Restart sshd
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+  listen: restart sshd
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  listen: reload systemd

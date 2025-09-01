@@ -1,0 +1,42 @@
+---
+# OS preparation tasks
+
+- name: prepare_os | Ensure system is up to date
+  ansible.builtin.package:
+    update_cache: true
+  tags: bastion_system_update
+
+- name: prepare_os | Ensure required directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ bastion_install_dir | dirname }}"
+      mode: '0755'
+    - path: /etc/bastion
+      mode: '0751'
+    - path: /root/backups
+      mode: '0700'
+  tags: bastion_directories
+
+- name: prepare_os | Install required packages
+  ansible.builtin.package:
+    name: "{{ bastion_required_packages }}"
+    state: present
+    update_cache: true
+  tags: bastion_install_required
+
+- name: prepare_os | Install optional packages
+  ansible.builtin.package:
+    name: "{{ bastion_optional_packages }}"
+    state: present
+  when: bastion_install_syslog_ng | bool
+  tags: bastion_install_optional
+
+- name: prepare_os | Install development packages
+  ansible.builtin.package:
+    name: "{{ bastion_dev_packages }}"
+    state: present
+  when: bastion_install_dev_packages | bool
+  tags: bastion_install_dev

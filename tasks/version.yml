@@ -1,0 +1,121 @@
+---
+# Version detection and comparison tasks
+
+- name: version | Check if bastion is already installed
+  ansible.builtin.stat:
+    path: "{{ bastion_install_dir }}/bin"
+  register: bastion_existing_install
+  tags: always
+
+- name: version | Check if version file exists
+  ansible.builtin.stat:
+    path: /etc/bastion/version
+  register: bastion_version_file
+  when: bastion_existing_install.stat.exists
+  tags: always
+
+- name: version | Read current version from file
+  ansible.builtin.slurp:
+    src: /etc/bastion/version
+  register: bastion_version_content
+  when:
+    - bastion_existing_install.stat.exists
+    - bastion_version_file.stat.exists
+  tags: always
+
+- name: version | Set current version fact from file
+  ansible.builtin.set_fact:
+    bastion_current_version: "{{ (bastion_version_content.content).strip() | b64decode }}"
+  when:
+    - bastion_existing_install.stat.exists
+    - bastion_version_file.stat.exists
+  tags: always
+
+- name: version | Set current version fact when no version file found
+  ansible.builtin.set_fact:
+    bastion_current_version: "unknown"
+  when:
+    - bastion_existing_install.stat.exists
+    - not bastion_version_file.stat.exists
+  tags: always
+
+- name: version | Set current version fact for new installation
+  ansible.builtin.set_fact:
+    bastion_current_version: "none"
+  when: not bastion_existing_install.stat.exists
+  tags: always
+
+- name: version | Normalize version strings for comparison
+  ansible.builtin.set_fact:
+    bastion_current_version_normalized: >-
+      {{ bastion_current_version | regex_replace('^v', '') if
+       bastion_current_version != 'none' and bastion_current_version != 'unknown' else
+       bastion_current_version }}
+    bastion_target_version_normalized: "{{ bastion_version | regex_replace('^v', '') }}"
+  tags: always
+
+- name: version | Make version strings semver compatible comparison
+  ansible.builtin.set_fact:
+    bastion_current_version_normalized: "{{ bastion_current_version_normalized | regex_replace('\\.0([0-9])$', '.\\1') }}"
+    bastion_target_version_normalized: "{{ bastion_target_version_normalized | regex_replace('\\.0([0-9])$', '.\\1') }}"
+  tags: always
+
+- ansible.builtin.debug: 
+    var: bastion_current_version_normalized
+
+- ansible.builtin.debug: 
+    var: bastion_target_version_normalized
+
+- name: version | Compare versions using version filter
+  ansible.builtin.set_fact:
+    bastion_version_comparison: >-
+      {%- if bastion_current_version == 'none' -%}
+        new_install
+      {%- elif bastion_current_version == 'unknown' -%}
+        upgrade_unknown
+      {%- elif bastion_current_version_normalized is version(bastion_target_version_normalized, '<', version_type='semver') -%}
+        upgrade
+      {%- elif bastion_current_version_normalized is version(bastion_target_version_normalized, '=', version_type='semver') -%}
+        same_version
+      {%- else -%}
+        downgrade
+      {%- endif -%}
+  tags: always
+
+- name: version | Fail if downgrade attempted
+  ansible.builtin.fail:
+    msg: |
+      Downgrade is not supported!
+      Current version: {{ bastion_current_version }}
+      Target version: {{ bastion_version }}
+      You cannot downgrade from {{ bastion_current_version }} to {{ bastion_version }}.
+  when: bastion_version_comparison == 'downgrade'
+  tags: always
+
+- name: version | Set installation mode based on version comparison
+  ansible.builtin.set_fact:
+    bastion_effective_install_mode: >-
+      {%- if bastion_version_comparison == 'new_install' -%}
+        new
+      {%- elif bastion_version_comparison in ['upgrade', 'upgrade_unknown'] -%}
+        upgrade
+      {%- else -%}
+        skip
+      {%- endif -%}
+  tags: always
+
+- name: version | Display version information
+  ansible.builtin.debug:
+    msg:
+      - "Version Analysis:"
+      - "- Current version: {{ bastion_current_version }}"
+      - "- Target version: {{ bastion_version }}"
+      - "- Comparison result: {{ bastion_version_comparison }}"
+      - "- Effective install mode: {{ bastion_effective_install_mode }}"
+  tags: always
+
+- name: version | Skip installation when same version
+  ansible.builtin.debug:
+    msg: "Bastion version {{ bastion_version }} is already installed. Skipping installation tasks."
+  when: bastion_version_comparison == 'same_version'
+  tags: always

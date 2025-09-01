@@ -1,0 +1,88 @@
+---
+# Configure The Bastion system
+
+- name: configure | Run bastion installation script (new install)
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/admin/install --new-install"
+  when: bastion_effective_install_mode == "new"
+  register: bastion_install_new_result
+  tags: bastion_install_new
+
+- name: configure | Run bastion installation script (upgrade)
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/admin/install {{ '--managed-upgrade' if bastion_upgrade_use_managed else '--upgrade' }}"
+  when: bastion_effective_install_mode == "upgrade"
+  register: bastion_install_upgade_result
+  tags: bastion_install_upgrade
+
+- name: configure | Create version file (new installation)
+  ansible.builtin.copy:
+    content: "{{ bastion_version }}"
+    dest: /etc/bastion/version
+    mode: "0644"
+  when:
+    - bastion_effective_install_mode == "new"
+    - bastion_install_new_result is succeeded
+    - bastion_install_new_result.changed
+  tags:
+    - bastion_install_new
+
+- name: configure | Create version file (upgrade)
+  ansible.builtin.copy:
+    content: "{{ bastion_version }}"
+    dest: /etc/bastion/version
+    mode: "0644"
+  when:
+    - bastion_effective_install_mode == "upgrade"
+    - bastion_install_upgade_result is succeeded
+    - bastion_install_upgade_result.changed
+  tags:
+    - bastion_install_upgrade
+
+- name: configure | Check that bastion.conf exists
+  ansible.builtin.stat:
+    path: /etc/bastion/bastion.conf
+  register: bastion_conf_stat
+  tags: bastion_check_config
+
+- name: configure | Fail if bastion.conf doesn't exist
+  ansible.builtin.fail:
+    msg: "Bastion configuration file /etc/bastion/bastion.conf was not created"
+  when: not bastion_conf_stat.stat.exists
+  tags: bastion_check_config
+
+- name: configure | Read current bastion configuration
+  ansible.builtin.slurp:
+    src: /etc/bastion/bastion.conf
+  register: bastion_current_config
+  tags: bastion_read_config
+
+- name: configure | Apply custom configuration options
+  ansible.builtin.lineinfile:
+    path: /etc/bastion/bastion.conf
+    regexp: "^\"{{ item.key }}\"\\s*:"
+    line: '"{{ item.key }}": {{ item.value | to_json }},'
+    backup: true
+  loop: "{{ bastion_config | dict2items }}"
+  when: bastion_config | length > 0
+  notify: restart sshd
+  tags: bastion_apply_config
+
+- name: configure | Run perl check script
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/dev/perl-check.sh"
+  register: bastion_perl_check
+  changed_when: false
+  tags: bastion_perl_check
+
+- name: configure | Display perl check results
+  ansible.builtin.debug:
+    var: bastion_perl_check.stdout_lines
+  tags: bastion_perl_check
+
+- name: configure | Ensure SSH service is enabled and started
+  ansible.builtin.systemd:
+    name: ssh
+    enabled: true
+    state: started
+  tags: bastion_ssh_service

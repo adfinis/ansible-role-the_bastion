@@ -1,0 +1,28 @@
+---
+# Debian specific variables
+
+# Required packages for The Bastion on Debian
+bastion_required_packages:
+  - perl
+  - openssh-server
+  - openssh-client
+  - sudo
+  - curl
+  - wget
+  - gnupg
+  - ca-certificates
+  - tar
+  - gzip
+  - git
+
+# Optional packages
+bastion_optional_packages:
+  - syslog-ng
+  - pamtester
+  - libpam-google-authenticator
+
+# Development packages (not for production)
+bastion_dev_packages:
+  - build-essential
+  - perl-doc
+  - perltidy

@@ -1,0 +1,37 @@
+---
+# Create first admin account
+
+- name: create_admin | Check if admin account already exists
+  ansible.builtin.command:
+    cmd: "getent passwd {{ bastion_first_admin.username }}"
+  register: admin_account_check
+  failed_when: false
+  changed_when: false
+  tags: bastion_check_admin
+
+- name: create_admin | Create first admin account
+  ansible.builtin.expect:
+    command: "{{ bastion_install_dir }}/bin/admin/setup-first-admin-account.sh {{ bastion_first_admin.username }} auto"
+    responses:
+      "(?i).*paste.*ssh.*key.*": "{{ bastion_first_admin.ssh_public_key }}"
+    timeout: 60
+  when: admin_account_check.rc != 0
+  register: bastion_admin_creation
+  tags: bastion_create_admin
+
+- name: create_admin | Display admin account creation result
+  ansible.builtin.debug:
+    msg:
+      - "Admin account '{{ bastion_first_admin.username }}' created successfully."
+      - "You can now connect to the bastion using:"
+      - "ssh {{ bastion_first_admin.username }}@{{ ansible_default_ipv4.address | default(ansible_host) }}"
+  when:
+    - bastion_admin_creation is defined
+    - bastion_admin_creation is succeeded
+  tags: bastion_admin_info
+
+- name: create_admin | Display admin account already exists message
+  ansible.builtin.debug:
+    msg: "Admin account '{{ bastion_first_admin.username }}' already exists, skipping creation."
+  when: admin_account_check.rc == 0
+  tags: bastion_admin_info
