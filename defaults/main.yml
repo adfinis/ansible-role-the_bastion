@@ -65,3 +65,24 @@ bastion_ha_sync_timeout: 120
 bastion_ha_sync_rshcmd: "ssh -q -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=accept-new"
 bastion_ha_sync_remoteuser: "{{ bastion_ha_sync_user }}"
 bastion_ha_sync_remotehostlist: "{{ bastion_ha_slave_ips | join(' ') }}"
+
+# GPG configuration for encryption and signature
+bastion_gpg_enabled: false
+
+# Bastion GPG key configuration (for signing ttyrec files)
+bastion_gpg_key_generate: true  # Generate the bastion GPG key automatically
+bastion_gpg_key_import: ""  # Import existing GPG key (alternative to generation)
+
+# Admin GPG key configuration (for encrypting backups and ttyrec files)
+# One or more admin public keys are required for GPG functionality
+bastion_admin_gpg_keys: []  # List of admin GPG public keys to import
+# Example:
+# bastion_admin_gpg_keys:
+#   - |
+#     -----BEGIN PGP PUBLIC KEY BLOCK-----
+#     mQENBF...
+#     -----END PGP PUBLIC KEY BLOCK-----
+#   - |
+#     -----BEGIN PGP PUBLIC KEY BLOCK-----
+#     mQGNBF...
+#     -----END PGP PUBLIC KEY BLOCK-----

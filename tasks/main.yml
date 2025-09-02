@@ -71,6 +71,13 @@
     - bastion
     - bastion_configure
 
+- name: Include GPG key setup tasks
+  ansible.builtin.include_tasks: gpg.yml
+  when: bastion_gpg_enabled | bool
+  tags:
+    - bastion
+    - bastion_gpg
+
 - name: Include first admin account creation tasks
   ansible.builtin.include_tasks: create_admin.yml
   when: bastion_effective_install_mode == "new"
