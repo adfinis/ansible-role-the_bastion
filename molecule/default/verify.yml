@@ -97,24 +97,22 @@
           - (bastion_version_content.content).strip() | b64decode in ['v3.20.00', 'v3.21.00']
         fail_msg: "Version file does not contain expected version"
 
-    - name: Check current bastion version  # noqa: command-instead-of-module
-      ansible.builtin.command:
-        cmd: git -C /opt/bastion describe --tags --exact-match HEAD
-      register: current_version
-      changed_when: false
-      failed_when: false
+    - name: Check current bastion version
+      ansible.builtin.slurp:
+        src: /etc/bastion/version
+      register: current_version_content
       when: inventory_hostname in groups['upgrade_test'] | default([])
 
     - name: Verify version for upgrade test
       ansible.builtin.assert:
         that:
-          - "'v3.21.00' in current_version.stdout"
-        fail_msg: "Upgrade did not result in expected version"
+          - (current_version_content.content | b64decode).strip() == 'v3.21.00'
+        fail_msg: "Upgrade did not result in expected version v3.21.00, got {{ (current_version_content.content | b64decode).strip() }}"
       when: inventory_hostname in groups['upgrade_test'] | default([])
 
     - name: Check for backup directory (upgrade test only)
       ansible.builtin.find:
-        paths: /root
+        paths: /root/backups
         patterns: "bastion-backup-*"
         file_type: directory
       register: backup_dirs

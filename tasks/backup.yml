@@ -1,9 +1,14 @@
 ---
 # Backup tasks before upgrade
 
+- name: backup | Set new backup directory name
+  ansible.builtin.set_fact:
+    bastion_backup_name: "bastion-backup-{{ ansible_date_time.epoch }}"
+  tags: bastion_backup_create
+
 - name: backup | Create backup directory
   ansible.builtin.file:
-    path: /root/backups/bastion-backup-{{ ansible_date_time.epoch }}
+    path: "{{ [bastion_backup_dir, bastion_backup_name] | ansible.builtin.path_join }}"
     state: directory
     mode: '0700'
   register: backup_dir

@@ -44,6 +44,7 @@ bastion_regenerate_host_keys: true
 
 # Backup configuration
 bastion_backup_encryption_enabled: true
+bastion_backup_dir: /root/backups
 
 # Upgrade specific settings
 bastion_upgrade_backup_before: true
