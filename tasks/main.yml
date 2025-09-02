@@ -77,3 +77,10 @@
   tags:
     - bastion
     - bastion_admin
+
+- name: Include high availability configuration tasks
+  ansible.builtin.include_tasks: ha_configure.yml
+  when: bastion_ha_enabled | bool
+  tags:
+    - bastion
+    - bastion_ha

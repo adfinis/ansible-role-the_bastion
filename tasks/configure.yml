@@ -4,6 +4,7 @@
 - name: configure | Run bastion installation script (new install)
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install --new-install"
+    creates: "{{ bastion_version }}"
   when: bastion_effective_install_mode == "new"
   register: bastion_install_new_result
   tags: bastion_install_new
@@ -11,6 +12,7 @@
 - name: configure | Run bastion installation script (upgrade)
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install {{ '--managed-upgrade' if bastion_upgrade_use_managed else '--upgrade' }}"
+    creates: "{{ bastion_version }}"
   when: bastion_effective_install_mode == "upgrade"
   register: bastion_install_upgade_result
   tags: bastion_install_upgrade

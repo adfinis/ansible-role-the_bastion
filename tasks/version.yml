@@ -60,12 +60,6 @@
     bastion_target_version_normalized: "{{ bastion_target_version_normalized | regex_replace('\\.0([0-9])$', '.\\1') }}"
   tags: always
 
-- ansible.builtin.debug: 
-    var: bastion_current_version_normalized
-
-- ansible.builtin.debug: 
-    var: bastion_target_version_normalized
-
 - name: version | Compare versions using version filter
   ansible.builtin.set_fact:
     bastion_version_comparison: >-

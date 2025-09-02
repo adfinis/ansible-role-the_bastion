@@ -1,0 +1,28 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# osh-sync-watcher configuration for The Bastion HA
+
+# Logging options
+# Directory where the logs will be written to.
+logdir="{{ bastion_ha_log_dir | d('') }}"
+
+# The syslog facility to use for logging the script output.
+syslog="{{ bastion_ha_sync_syslog }}"
+
+# Daemon setup
+# If set to anything else than 1, the daemon will refuse to start
+enabled={{ bastion_ha_sync_enabled }}
+
+# The maximum delay, in seconds, after which we'll forcefully synchronize
+# our data to the secondaries, even if no change was detected.
+timeout={{ bastion_ha_sync_timeout }}
+
+# Remote synchronization
+# This value will be passed as the --rsh parameter of rsync
+rshcmd="{{ bastion_ha_sync_rshcmd }}"
+
+# The remote user to connect as, using ssh while rsyncing to secondaries
+remoteuser="{{ bastion_ha_sync_remoteuser }}"
+
+# The list of the secondary bastions to push our data to
+remotehostlist="{{ bastion_ha_sync_remotehostlist }}"

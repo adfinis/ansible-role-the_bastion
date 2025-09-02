@@ -1,0 +1,187 @@
+---
+- name: Verify HA Configuration
+  hosts: ha_cluster
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Check that The Bastion is installed
+      ansible.builtin.stat:
+        path: /opt/bastion/bin
+      register: bastion_binary
+
+    - name: Verify bastion binary directory exists
+      ansible.builtin.assert:
+        that:
+          - bastion_binary.stat.exists
+          - bastion_binary.stat.isdir
+        fail_msg: "The Bastion binary directory does not exist"
+
+    - name: Check bastion configuration file
+      ansible.builtin.stat:
+        path: /etc/bastion/bastion.conf
+      register: bastion_config_file
+
+    - name: Verify bastion configuration exists
+      ansible.builtin.assert:
+        that:
+          - bastion_config_file.stat.exists
+        fail_msg: "The Bastion configuration file does not exist"
+
+    - name: Read bastion configuration
+      ansible.builtin.slurp:
+        src: /etc/bastion/bastion.conf
+      register: bastion_config_content
+
+    - name: Verify read-only slave mode is set correctly on slaves
+      ansible.builtin.assert:
+        that:
+          - "'readOnlySlaveMode = 1' in (bastion_config_content.content | b64decode)"
+        fail_msg: "Read-only slave mode is not enabled on slave"
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Verify read-only slave mode is disabled on master
+      ansible.builtin.assert:
+        that:
+          - "'readOnlySlaveMode = 0' in (bastion_config_content.content | b64decode)"
+        fail_msg: "Read-only slave mode should be disabled on master"
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Check SSH key exists on master
+      ansible.builtin.stat:
+        path: /root/.ssh/id_master2slave
+      register: master_ssh_key
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Verify SSH key exists on master
+      ansible.builtin.assert:
+        that:
+          - master_ssh_key.stat.exists
+        fail_msg: "Master SSH key does not exist"
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Check SSH public key exists on master
+      ansible.builtin.stat:
+        path: /root/.ssh/id_master2slave.pub
+      register: master_ssh_pubkey
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Verify SSH public key exists on master
+      ansible.builtin.assert:
+        that:
+          - master_ssh_pubkey.stat.exists
+        fail_msg: "Master SSH public key does not exist"
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Check bastionsync user exists
+      ansible.builtin.command:
+        cmd: getent passwd bastionsync
+      register: bastionsync_user
+      changed_when: false
+      failed_when: false
+
+    - name: Verify bastionsync user exists
+      ansible.builtin.assert:
+        that:
+          - bastionsync_user.rc == 0
+        fail_msg: "bastionsync user does not exist"
+
+    - name: Check bastionsync SSH directory on slaves
+      ansible.builtin.stat:
+        path: /home/bastionsync/.ssh
+      register: bastionsync_ssh_dir
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Verify bastionsync SSH directory exists on slaves
+      ansible.builtin.assert:
+        that:
+          - bastionsync_ssh_dir.stat.exists
+          - bastionsync_ssh_dir.stat.isdir
+        fail_msg: "bastionsync SSH directory does not exist on slave"
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Check authorized_keys file on slaves
+      ansible.builtin.stat:
+        path: /home/bastionsync/.ssh/authorized_keys
+      register: authorized_keys_file
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Verify authorized_keys file exists on slaves
+      ansible.builtin.assert:
+        that:
+          - authorized_keys_file.stat.exists
+        fail_msg: "authorized_keys file does not exist on slave"
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Read authorized_keys content on slaves
+      ansible.builtin.slurp:
+        src: /home/bastionsync/.ssh/authorized_keys
+      register: authorized_keys_content
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Verify authorized_keys contains correct restrictions on slaves
+      ansible.builtin.assert:
+        that:
+          - "'from=\"172.28.0.10\",restrict ssh-ed25519' in (authorized_keys_content.content | b64decode)"
+        fail_msg: "authorized_keys does not contain correct SSH key with restrictions"
+      when: inventory_hostname in groups['ha_slave']
+
+    - name: Check osh-sync-watcher configuration on master
+      ansible.builtin.stat:
+        path: /etc/bastion/osh-sync-watcher.sh
+      register: sync_watcher_config
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Verify osh-sync-watcher configuration exists on master
+      ansible.builtin.assert:
+        that:
+          - sync_watcher_config.stat.exists
+        fail_msg: "osh-sync-watcher configuration does not exist on master"
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Read osh-sync-watcher configuration on master
+      ansible.builtin.slurp:
+        src: /etc/bastion/osh-sync-watcher.sh
+      register: sync_watcher_content
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Verify osh-sync-watcher is enabled on master
+      ansible.builtin.assert:
+        that:
+          - "'enabled=1' in (sync_watcher_content.content | b64decode)"
+          - "'172.28.0.11 172.28.0.12' in (sync_watcher_content.content | b64decode)"
+        fail_msg: "osh-sync-watcher is not properly configured on master"
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Check SSH service is running
+      ansible.builtin.service_facts:
+
+    - name: Verify SSH service is running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['ssh.service'].state == 'running'
+        fail_msg: "SSH service is not running"
+
+    - name: Test connectivity between master and slaves
+      ansible.builtin.wait_for:
+        host: "{{ item }}"
+        port: 22
+        timeout: 30
+      loop: "{{ bastion_ha_slave_ips }}"
+      when: inventory_hostname in groups['ha_master']
+
+    - name: Display HA cluster status
+      ansible.builtin.debug:
+        msg: |
+          HA Cluster Configuration Status:
+          {% if inventory_hostname in groups['ha_master'] %}
+          - Role: MASTER
+          - Slave IPs: {{ bastion_ha_slave_ips | join(', ') }}
+          - SSH key: ✓ Generated
+          - Sync watcher: ✓ Configured
+          {% else %}
+          - Role: SLAVE
+          - Master IP: {{ bastion_ha_master_ip }}
+          - Read-only mode: ✓ Enabled
+          - SSH access: ✓ Configured
+          {% endif %}

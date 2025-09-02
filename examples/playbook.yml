@@ -23,7 +23,7 @@
 
     # Optional: Custom bastion configuration
     # bastion_config:
-    #   bastionName: "SensFortress"
+    #   bastionName: "sensfortress"
     #   adminAccounts: "bastionadmin,otheradmin"
     #   superOwnerAccounts: "superadmin"
     #   defaultAccountTTL: "90"

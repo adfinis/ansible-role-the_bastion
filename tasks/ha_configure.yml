@@ -1,0 +1,192 @@
+---
+# High Availability configuration tasks for The Bastion
+
+- name: ha_configure | Validate HA configuration
+  ansible.builtin.assert:
+    that:
+      - bastion_ha_role in ['master', 'slave']
+      - bastion_ha_role == 'slave' and bastion_ha_master_ip | length > 0 or bastion_ha_role == 'master'
+      - bastion_ha_role == 'master' and bastion_ha_slave_ips | length > 0 or bastion_ha_role == 'slave'
+    fail_msg: "Invalid HA configuration. Check bastion_ha_role, bastion_ha_master_ip, and bastion_ha_slave_ips"
+  when: bastion_ha_enabled | bool
+
+- name: ha_configure | Set read-only slave mode in bastion.conf
+  ansible.builtin.lineinfile:
+    path: /etc/bastion/bastion.conf
+    regexp: '^"readOnlySlaveMode":\s*'
+    line: '"readOnlySlaveMode": true,'
+    state: present
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'slave'
+  notify: restart bastion services
+
+- name: ha_configure | Ensure read-only slave mode is disabled on master
+  ansible.builtin.lineinfile:
+    path: /etc/bastion/bastion.conf
+    regexp: '^"readOnlySlaveMode":\s*'
+    line: '"readOnlySlaveMode": false,'
+    state: present
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+  notify: restart bastion services
+
+- name: ha_configure | Generate SSH key for master-slave communication
+  ansible.builtin.command:
+    cmd: ssh-keygen -t ed25519 -f {{ bastion_ha_ssh_key_path }} -N "" -C "bastion-ha-sync"
+  args:
+    creates: "{{ bastion_ha_ssh_key_path }}"
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Set correct permissions on SSH private key
+  ansible.builtin.file:
+    path: "{{ bastion_ha_ssh_key_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Set correct permissions on SSH public key
+  ansible.builtin.file:
+    path: "{{ bastion_ha_ssh_key_path }}.pub"
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Read master's public SSH key
+  ansible.builtin.slurp:
+    src: "{{ bastion_ha_ssh_key_path }}.pub"
+  register: master_ssh_key_content
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Store master's SSH key content for slaves
+  ansible.builtin.set_fact:
+    master_ssh_key_data: "{{ master_ssh_key_content.content | b64decode | trim }}"
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+    - master_ssh_key_content is defined
+
+- name: ha_configure | Get master's SSH key from master host
+  ansible.builtin.set_fact:
+    master_ssh_key_data: "{{ hostvars[groups['ha_master'][0]]['master_ssh_key_data'] }}"
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'slave'
+    - groups['ha_master'] is defined
+    - groups['ha_master'] | length > 0
+    - hostvars[groups['ha_master'][0]]['master_ssh_key_data'] is defined
+
+- name: ha_configure | Ensure bastionsync user SSH directory exists
+  ansible.builtin.file:
+    path: "/home/{{ bastion_ha_sync_user }}/.ssh"
+    state: directory
+    owner: "{{ bastion_ha_sync_user }}"
+    group: "{{ bastion_ha_sync_user }}"
+    mode: '0700'
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'slave'
+
+- name: ha_configure | Configure authorized_keys for bastionsync user on slave
+  ansible.builtin.lineinfile:
+    path: "/home/{{ bastion_ha_sync_user }}/.ssh/authorized_keys"
+    line: 'from="{{ bastion_ha_master_ip }}",restrict {{ master_ssh_key_data }}'
+    create: true
+    owner: "{{ bastion_ha_sync_user }}"
+    group: "{{ bastion_ha_sync_user }}"
+    mode: '0600'
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'slave'
+    - master_ssh_key_data is defined
+
+- name: ha_configure | Test SSH connectivity from master to slave
+  ansible.builtin.command:
+    cmd: ssh -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ bastion_ha_sync_user }}@{{ item }} "echo 'SSH connectivity test successful'"
+  register: ssh_test
+  changed_when: false
+  failed_when: '"Only rsync is allowed, aborting" not in ssh_test.stderr_lines'
+  loop: "{{ bastion_ha_slave_ips }}"
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Copy the accounts and groups files from master to slave
+  ansible.builtin.command:
+    cmd: rsync -v --rsh "ssh -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" /etc/passwd /etc/group {{ bastion_ha_sync_user }}@{{ item }}:/root/
+  register: sync_test
+  changed_when: false
+  failed_when: sync_test.rc != 0
+  loop: "{{ bastion_ha_slave_ips }}"
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Compare accounts and groups on slaves
+  ansible.builtin.command:
+    cmd: "{{ bastion_install_dir }}/bin/admin/check_uid_gid_collisions.pl --master-passwd /root/passwd --master-group /root/group --output /root/syncids.sh"
+  register: compare_ids
+  changed_when: false
+  failed_when: compare_ids.rc != 0 or ('There is nothing to change, all UIDs/GIDs are in sync :)' not in compare_ids.stdout)
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'slave'
+
+- name: ha_configure | Configure osh-sync-watcher for master
+  ansible.builtin.template:
+    src: osh-sync-watcher.sh.j2
+    dest: /etc/bastion/osh-sync-watcher.sh
+    owner: root
+    group: root
+    mode: '0755'
+    backup: true
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+  notify: restart osh-sync-watcher
+
+- name: ha_configure | Ensure osh-sync-watcher is disabled on slaves
+  ansible.builtin.systemd:
+    name: osh-sync-watcher
+    enabled: false
+    state: stopped
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'slave'
+
+- name: ha_configure | Enable and start osh-sync-watcher service on master
+  ansible.builtin.systemd:
+    name: osh-sync-watcher
+    enabled: true
+    state: started
+    daemon_reload: true
+  when:
+    - bastion_ha_enabled | bool
+    - bastion_ha_role == 'master'
+
+- name: ha_configure | Display HA configuration status
+  ansible.builtin.debug:
+    msg: |
+      High Availability configuration completed:
+      - Role: {{ bastion_ha_role }}
+      {% if bastion_ha_role == 'master' %}
+      - Slave IPs: {{ bastion_ha_slave_ips | join(', ') }}
+      - SSH key generated: {{ bastion_ha_ssh_key_path }}
+      - Sync watcher enabled
+      {% else %}
+      - Master IP: {{ bastion_ha_master_ip }}
+      - Read-only slave mode enabled
+      - SSH access configured for bastionsync user
+      {% endif %}
+  when: bastion_ha_enabled | bool

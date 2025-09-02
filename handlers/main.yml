@@ -11,3 +11,17 @@
   ansible.builtin.systemd:
     daemon_reload: true
   listen: reload systemd
+
+- name: Restart bastion services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - ssh
+  listen: restart bastion services
+
+- name: Restart osh-sync-watcher
+  ansible.builtin.systemd:
+    name: osh-sync-watcher
+    state: restarted
+  listen: restart osh-sync-watcher

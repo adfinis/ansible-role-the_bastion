@@ -32,7 +32,7 @@ bastion_first_admin:
 
 # Additional configuration options for /etc/bastion/bastion.conf
 bastion_config:
-  bastionName: "SensFortress"
+  bastionName: "sensfortress"
 
 # Whether to install optional tools
 bastion_install_yubico_piv_checker: false
@@ -49,3 +49,19 @@ bastion_backup_dir: /root/backups
 # Upgrade specific settings
 bastion_upgrade_backup_before: true
 bastion_upgrade_use_managed: false  # Use --managed-upgrade instead of --upgrade
+
+# High Availability / Clustering configuration
+bastion_ha_enabled: false
+bastion_ha_role: master  # master or slave
+bastion_ha_master_ip: ""  # IP address of the master bastion (required for slaves)
+bastion_ha_slave_ips: []  # List of slave IP addresses (required for master)
+bastion_ha_ssh_key_path: "/root/.ssh/id_master2slave"  # SSH key path for master-slave communication
+bastion_ha_sync_user: "bastionsync"  # User for synchronization
+
+# Configuration for osh-sync-watcher
+bastion_ha_sync_syslog: "local6"
+bastion_ha_sync_enabled: "{{ bastion_ha_enabled | ternary('1', '0') }}"
+bastion_ha_sync_timeout: 120
+bastion_ha_sync_rshcmd: "ssh -q -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=accept-new"
+bastion_ha_sync_remoteuser: "{{ bastion_ha_sync_user }}"
+bastion_ha_sync_remotehostlist: "{{ bastion_ha_slave_ips | join(' ') }}"

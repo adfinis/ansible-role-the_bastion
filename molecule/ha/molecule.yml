@@ -1,0 +1,95 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: podman
+
+platforms:
+  - name: bastion-ha-master
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - ha_master
+      - ha_cluster
+    network: bastion_ha_network
+    subnet: 172.28.0.0/24
+    ip: 172.28.0.10
+
+  - name: bastion-ha-slave1
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - ha_slave
+      - ha_cluster
+    network: bastion_ha_network
+    subnet: 172.28.0.0/24
+    ip: 172.28.0.11
+
+  - name: bastion-ha-slave2
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - ha_slave
+      - ha_cluster
+    network: bastion_ha_network
+    subnet: 172.28.0.0/24
+    ip: 172.28.0.12
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
+    ssh_connection:
+      pipelining: false
+  inventory:
+    group_vars:
+      ha_cluster:
+        bastion_install_method: tarball
+        bastion_encrypt_home: false
+        bastion_install_syslog_ng: true
+        bastion_ha_enabled: true
+        bastion_first_admin:
+          username: bastionadmin
+          ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
+      ha_master:
+        bastion_ha_role: master
+        bastion_ha_slave_ips:
+          - "172.28.0.11"
+          - "172.28.0.12"
+        bastion_ha_master_group: ha_master
+      ha_slave:
+        bastion_ha_role: slave
+        bastion_ha_master_ip: "172.28.0.10"
+        bastion_ha_master_group: ha_master
+
+verifier:
+  name: ansible
