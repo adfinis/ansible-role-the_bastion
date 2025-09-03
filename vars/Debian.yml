@@ -3,6 +3,7 @@
 
 # Required packages for The Bastion on Debian
 bastion_required_packages:
+  - python3-pexpect
   - perl
   - openssh-server
   - openssh-client

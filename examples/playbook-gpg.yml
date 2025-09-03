@@ -17,7 +17,7 @@
     # Option 1: Import an existing admin GPG public key
     bastion_admin_gpg_key_import: |
       -----BEGIN PGP PUBLIC KEY BLOCK-----
-      
+
       mQENBGH8...
       [Your Admin GPG Public Key Here]
       ...
@@ -39,11 +39,6 @@
     #   ...
 
   pre_tasks:
-    - name: Ensure Python pexpect is installed
-      ansible.builtin.package:
-        name: python3-pexpect
-        state: present
-
     - name: Ensure GnuPG is installed
       ansible.builtin.package:
         name: gnupg

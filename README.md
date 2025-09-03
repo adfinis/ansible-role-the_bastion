@@ -14,7 +14,6 @@ Installs and configures [The Bastion](https://github.com/ovh/the-bastion) SSH ju
 ## Requirements
 
 - Debian 12 or 13
-- `python3-pexpect` package
 - `community.general` Ansible collection
 
 ## Quick Start

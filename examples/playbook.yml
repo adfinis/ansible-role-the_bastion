@@ -28,12 +28,6 @@
     #   superOwnerAccounts: "superadmin"
     #   defaultAccountTTL: "90"
 
-  pre_tasks:
-    - name: Ensure Python pexpect is installed
-      ansible.builtin.package:
-        name: python3-pexpect
-        state: present
-
   roles:
     - adfinis.the_bastion
 

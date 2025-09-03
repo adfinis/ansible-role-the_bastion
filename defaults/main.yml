@@ -40,7 +40,6 @@ bastion_install_mkhash_helper: false
 
 # SSH hardening settings (only for new installations)
 bastion_harden_ssh: true
-bastion_regenerate_host_keys: true
 
 # Backup configuration
 bastion_backup_encryption_enabled: true
