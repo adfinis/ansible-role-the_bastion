@@ -59,14 +59,13 @@
   register: bastion_current_config
   tags: bastion_read_config
 
-- name: configure | Apply custom configuration options
-  ansible.builtin.lineinfile:
-    path: /etc/bastion/bastion.conf
-    regexp: "^\"{{ item.key }}\"\\s*:"
-    line: '"{{ item.key }}": {{ item.value | to_json }},'
+- name: configure | Generate bastion configuration from template
+  ansible.builtin.template:
+    src: bastion.conf.j2
+    dest: /etc/bastion/bastion.conf
     backup: true
-  loop: "{{ bastion_config | dict2items }}"
-  when: bastion_config | length > 0
+    mode: "0644"
+  when: bastion_config is defined
   notify: restart sshd
   tags: bastion_apply_config
 
