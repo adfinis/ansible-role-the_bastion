@@ -53,6 +53,7 @@ bastion_upgrade_use_managed: false  # Use --managed-upgrade instead of --upgrade
 # High Availability / Clustering configuration
 bastion_ha_enabled: false
 bastion_ha_role: master  # master or slave
+bastion_ha_master_group: ha_master # ansible group name for the master node
 bastion_ha_master_ip: ""  # IP address of the master bastion (required for slaves)
 bastion_ha_slave_ips: []  # List of slave IP addresses (required for master)
 bastion_ha_ssh_key_path: "/root/.ssh/id_master2slave"  # SSH key path for master-slave communication

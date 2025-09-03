@@ -79,13 +79,13 @@
 
 - name: ha_configure | Get master's SSH key from master host
   ansible.builtin.set_fact:
-    master_ssh_key_data: "{{ hostvars[groups['ha_master'][0]]['master_ssh_key_data'] }}"
+    master_ssh_key_data: "{{ hostvars[groups[bastion_ha_master_group][0]]['master_ssh_key_data'] }}"
   when:
     - bastion_ha_enabled | bool
     - bastion_ha_role == 'slave'
-    - groups['ha_master'] is defined
-    - groups['ha_master'] | length > 0
-    - hostvars[groups['ha_master'][0]]['master_ssh_key_data'] is defined
+    - groups[bastion_ha_master_group] is defined
+    - groups[bastion_ha_master_group] | length > 0
+    - hostvars[groups[bastion_ha_master_group][0]]['master_ssh_key_data'] is defined
 
 - name: ha_configure | Ensure bastionsync user SSH directory exists
   ansible.builtin.file:
