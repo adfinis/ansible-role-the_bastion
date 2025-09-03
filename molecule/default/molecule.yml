@@ -8,67 +8,67 @@ driver:
   name: podman
 
 platforms:
-  # - name: debian13-bastion-new-tarball
-  #   image: docker.io/geerlingguy/docker-debian13-ansible:latest
-  #   pre_build_image: true
-  #   privileged: true
-  #   command: /lib/systemd/systemd
-  #   capabilities:
-  #     - SYS_ADMIN
-  #   cgroupns_mode: host
-  #   userns_mode: host
-  #   volumes:
-  #     - /sys/fs/cgroup:/sys/fs/cgroup:rw
-  #   groups:
-  #     - new_install
-  #     - install_tarball
+  - name: debian13-bastion-new-tarball
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - new_install
+      - install_tarball
 
-  # - name: debian13-bastion-new-git
-  #   image: docker.io/geerlingguy/docker-debian13-ansible:latest
-  #   pre_build_image: true
-  #   privileged: true
-  #   command: /lib/systemd/systemd
-  #   capabilities:
-  #     - SYS_ADMIN
-  #   cgroupns_mode: host
-  #   userns_mode: host
-  #   volumes:
-  #     - /sys/fs/cgroup:/sys/fs/cgroup:rw
-  #   groups:
-  #     - new_install
-  #     - install_git
+  - name: debian13-bastion-new-git
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - new_install
+      - install_git
 
-  # # we need to use debian12 for upgrade testing, as debian13 isn't supported by bastion v3.20.00
-  # - name: debian12-bastion-upgrade-tarball
-  #   image: docker.io/geerlingguy/docker-debian12-ansible:latest
-  #   pre_build_image: true
-  #   privileged: true
-  #   command: /lib/systemd/systemd
-  #   capabilities:
-  #     - SYS_ADMIN
-  #   cgroupns_mode: host
-  #   userns_mode: host
-  #   volumes:
-  #     - /sys/fs/cgroup:/sys/fs/cgroup:rw
-  #   groups:
-  #     - upgrade_test
-  #     - install_tarball
+  # we need to use debian12 for upgrade testing, as debian13 isn't supported by bastion v3.20.00
+  - name: debian12-bastion-upgrade-tarball
+    image: docker.io/geerlingguy/docker-debian12-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - upgrade_test
+      - install_tarball
 
-  #   # we need to use debian12 for upgrade testing, as debian13 isn't supported by bastion v3.20.00
-  # - name: debian12-bastion-upgrade-git
-  #   image: docker.io/geerlingguy/docker-debian12-ansible:latest
-  #   pre_build_image: true
-  #   privileged: true
-  #   command: /lib/systemd/systemd
-  #   capabilities:
-  #     - SYS_ADMIN
-  #   cgroupns_mode: host
-  #   userns_mode: host
-  #   volumes:
-  #     - /sys/fs/cgroup:/sys/fs/cgroup:rw
-  #   groups:
-  #     - upgrade_test
-  #     - install_git
+    # we need to use debian12 for upgrade testing, as debian13 isn't supported by bastion v3.20.00
+  - name: debian12-bastion-upgrade-git
+    image: docker.io/geerlingguy/docker-debian12-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - upgrade_test
+      - install_git
 
   - name: debian13-bastion-gpg
     image: docker.io/geerlingguy/docker-debian13-ansible:latest
