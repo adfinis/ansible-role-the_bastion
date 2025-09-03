@@ -36,14 +36,14 @@
     - name: Verify read-only slave mode is set correctly on slaves
       ansible.builtin.assert:
         that:
-          - "'readOnlySlaveMode = 1' in (bastion_config_content.content | b64decode)"
+          - '"\"readOnlySlaveMode\": true" in (bastion_config_content.content | b64decode)'
         fail_msg: "Read-only slave mode is not enabled on slave"
       when: inventory_hostname in groups['ha_slave']
 
     - name: Verify read-only slave mode is disabled on master
       ansible.builtin.assert:
         that:
-          - "'readOnlySlaveMode = 0' in (bastion_config_content.content | b64decode)"
+          - '"\"readOnlySlaveMode\": false" in (bastion_config_content.content | b64decode)'
         fail_msg: "Read-only slave mode should be disabled on master"
       when: inventory_hostname in groups['ha_master']
 
