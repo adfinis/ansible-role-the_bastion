@@ -113,7 +113,11 @@
 
 - name: ha_configure | Test SSH connectivity from master to slave
   ansible.builtin.command:
-    cmd: ssh -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {{ bastion_ha_sync_user }}@{{ item }} "echo 'SSH connectivity test successful'"
+    cmd: >-
+      ssh -i {{ bastion_ha_ssh_key_path }}
+        -o StrictHostKeyChecking=no
+        -o UserKnownHostsFile=/dev/null
+        {{ bastion_ha_sync_user }}@{{ item }} "echo 'Hello World'"
   register: ssh_test
   changed_when: false
   failed_when: '"Only rsync is allowed, aborting" not in ssh_test.stderr_lines'
@@ -122,9 +126,12 @@
     - bastion_ha_enabled | bool
     - bastion_ha_role == 'master'
 
-- name: ha_configure | Copy the accounts and groups files from master to slave
+- name: ha_configure | Copy the accounts and groups files from master to slave  # noqa: command-instead-of-module
   ansible.builtin.command:
-    cmd: rsync -v --rsh "ssh -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" /etc/passwd /etc/group {{ bastion_ha_sync_user }}@{{ item }}:/root/
+    cmd: >-
+      rsync -v --rsh
+      "ssh -i {{ bastion_ha_ssh_key_path }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      /etc/passwd /etc/group {{ bastion_ha_sync_user }}@{{ item }}:/root/
   register: sync_test
   changed_when: false
   failed_when: sync_test.rc != 0
@@ -135,7 +142,11 @@
 
 - name: ha_configure | Compare accounts and groups on slaves
   ansible.builtin.command:
-    cmd: "{{ bastion_install_dir }}/bin/admin/check_uid_gid_collisions.pl --master-passwd /root/passwd --master-group /root/group --output /root/syncids.sh"
+    cmd: >-
+      "{{ bastion_install_dir }}/bin/admin/check_uid_gid_collisions.pl
+        --master-passwd /root/passwd
+        --master-group /root/group
+        --output /root/syncids.sh"
   register: compare_ids
   changed_when: false
   failed_when: compare_ids.rc != 0 or ('There is nothing to change, all UIDs/GIDs are in sync :)' not in compare_ids.stdout)

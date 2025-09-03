@@ -30,7 +30,7 @@
 - name: gpg | Import existing bastion GPG key
   ansible.builtin.shell:
     cmd: |
-      echo "{{ bastion_gpg_key_import }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import
+      set -o pipefail && echo "{{ bastion_gpg_key_import }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import
     creates: /etc/bastion/osh-encrypt-rsync.conf.d/50-gpg-bastion-key.conf
   when:
     - bastion_gpg_key_import | length > 0
@@ -60,7 +60,7 @@
 - name: gpg | Import admin GPG public keys
   ansible.builtin.shell:
     cmd: |
-      echo "{{ item }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import --overwrite
+      set -o pipefail && echo "{{ item }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import --overwrite
   loop: "{{ bastion_admin_gpg_keys }}"
   when:
     - bastion_admin_gpg_keys | length > 0
@@ -68,8 +68,8 @@
   register: admin_gpg_import_results
   changed_when: false  # We'll determine this separately
   failed_when: >-
-    admin_gpg_import_results.rc != 0 and 
-    'key you imported (did it exist already?)' not in (admin_gpg_import_results.stderr | default(''))
+    admin_gpg_import_results.rc != 0 and
+     'key you imported (did it exist already?)' not in (admin_gpg_import_results.stderr | default(''))
   tags: bastion_gpg
 
 - name: gpg | Get admin GPG config file after import
@@ -85,10 +85,10 @@
     admin_gpg_config_changed: >-
       {{
         (not admin_gpg_config_before.stat.exists and admin_gpg_config_after.stat.exists) or
-        (admin_gpg_config_before.stat.exists and admin_gpg_config_after.stat.exists and 
+        (admin_gpg_config_before.stat.exists and admin_gpg_config_after.stat.exists and
          admin_gpg_config_before.stat.checksum != admin_gpg_config_after.stat.checksum)
       }}
-  when: 
+  when:
     - bastion_admin_gpg_keys | length > 0
     - admin_gpg_config_before is defined
     - admin_gpg_config_after is defined
@@ -103,9 +103,9 @@
   changed_when: false
   failed_when: false
   when:
-    - bastion_gpg_key_exists.stat.exists or 
-      (bastion_gpg_generate_result is defined and bastion_gpg_generate_result.changed) or
-      (bastion_gpg_import_result is defined and bastion_gpg_import_result.changed)
+    - bastion_gpg_key_exists.stat.exists or
+       (bastion_gpg_generate_result is defined and bastion_gpg_generate_result.changed) or
+       (bastion_gpg_import_result is defined and bastion_gpg_import_result.changed)
     - admin_gpg_config_changed is defined and admin_gpg_config_changed | bool
   tags: bastion_gpg
 
