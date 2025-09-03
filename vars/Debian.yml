@@ -21,6 +21,7 @@ bastion_optional_packages:
   - syslog-ng
   - pamtester
   - libpam-google-authenticator
+  - mosh
 
 # Development packages (not for production)
 bastion_dev_packages:
