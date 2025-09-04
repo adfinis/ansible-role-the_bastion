@@ -60,7 +60,6 @@
   ansible.builtin.include_tasks: encrypt.yml
   when:
     - bastion_encrypt_home | bool
-    - bastion_effective_install_mode == "new"
   tags:
     - bastion
     - bastion_encrypt

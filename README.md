@@ -72,6 +72,9 @@ bastion_ha_sync_user: "bastionsync"
 
 ### Home Encryption
 
+>[!WARNING]
+> Make sure your /home is on a separate partition!
+
 Encrypt user directories with LUKS:
 
 ```yaml

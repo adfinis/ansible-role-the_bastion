@@ -42,11 +42,11 @@
   ansible.builtin.expect:
     command: "{{ bastion_install_dir }}/bin/admin/setup-encryption.sh"
     responses:
+      "Does this look reasonable?": "y"
+      "Are you sure\\? \\(Type 'yes' in capital letters\\): ": "YES"
       "Enter passphrase for.*": "{{ bastion_encryption_passphrase }}"
       "Verify passphrase:": "{{ bastion_encryption_passphrase }}"
-      "Are you sure.*": "YES"
     timeout: 300
-    creates: /etc/crypttab
   when:
     - bastion_encrypt_home | bool
     - not home_already_encrypted | bool
