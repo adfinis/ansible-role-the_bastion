@@ -357,14 +357,14 @@
 #          The result is interpreted from the program's exit code. If the program return 0, the account is deemed active. If the program returns 1, the account is deemed inactive. A return code of 2, 3 or 4 indicates a failure of the program in determining the activeness of the account. In this case, the decision to allow or deny the access is determined by the ``accountExternalValidationDenyOnFailure`` option below. Status code 3 additionally logs the ``stderr`` of the program *silently* to the syslog: this can be used to warn admins of a problem without leaking information to the user. Status code 4 does the same, but the ``stderr`` is also shown directly to the user. Any other return code deems the account inactive (same behavior that return code 1).
 # DEFAULT: ""
 # EXAMPLE: "$BASEDIR/bin/other/check-active-account-simple.pl"
-"accountExternalValidationProgram": {{ bastion_config.accountExternalValidationProgram | default("") | to_json }},
+"accountExternalValidationProgram": {{ (bastion_external_validation_program_path if bastion_external_validation_enabled else (bastion_config.accountExternalValidationProgram | default(""))) | to_json }},
 #
 # accountExternalValidationDenyOnFailure (boolean)
 #    DESC: If we can't validate an account using the program configured in ``accountExternalValidationProgram``, for example because the path doesn't exist, the file is not executable, or because the program returns the exit code 4 (see above for more information), this configuration option indicates whether we should deny or allow access.
 #
 #          Note that the bastion admins will always be allowed if the ``accountExternalValidationProgram`` doesn't work correctly, because they're expected to be able to fix it. They would be denied, as any other account, if ``accountExternalValidationProgram`` works correctly and denies them access, however. If you're still testing your account validation procedure, and don't want to break your users workflow while you're not 100% sure it works correctly, you can say ``false`` here, and return 4 instead of 1 in your ``accountExternalValidationProgram`` when you would want to deny access.
 # DEFAULT: true
-"accountExternalValidationDenyOnFailure": {{ bastion_config.accountExternalValidationDenyOnFailure | default(true) | to_json }},
+"accountExternalValidationDenyOnFailure": {{ (bastion_external_validation_deny_on_failure if bastion_external_validation_enabled else (bastion_config.accountExternalValidationDenyOnFailure | default(true))) | to_json }},
 #
 # alwaysActiveAccounts (array of strings (account names))
 #    DESC: List of accounts which should NOT be checked against the ``accountExternalValidationProgram`` mechanism above (for example bot accounts). This can also be set per-account at account creation time or later with the ``accountModify`` plugin's ``--always-active`` flag.
