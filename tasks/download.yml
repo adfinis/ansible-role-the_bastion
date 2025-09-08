@@ -3,9 +3,9 @@
 
 - name: download | Update git repository (upgrade mode with git)
   ansible.builtin.git:
-    repo: "{{ bastion_github_repo }}"
+    repo: "{{ bastion_git_repo }}"
     dest: "{{ bastion_install_dir }}"
-    version: "{{ bastion_version }}"
+    version: "{{ bastion_git_version }}"
     force: true
   when:
     - bastion_effective_install_mode == "upgrade"
@@ -63,9 +63,9 @@
 
 - name: download | Clone The Bastion repository (new installation)
   ansible.builtin.git:
-    repo: "{{ bastion_github_repo }}"
+    repo: "{{ bastion_git_repo }}"
     dest: "{{ bastion_install_dir }}"
-    version: "{{ bastion_version }}"
+    version: "{{ bastion_git_version }}"
     force: true
   when:
     - bastion_install_method == "git"

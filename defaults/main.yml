@@ -10,8 +10,11 @@ bastion_version: "v3.21.00"
 # Whether to use git clone or tarball installation
 bastion_install_method: tarball  # or 'git'
 
-# GitHub repository for The Bastion
-bastion_github_repo: "https://github.com/ovh/the-bastion"
+# Repository for The Bastion
+bastion_git_repo: "https://github.com/ovh/the-bastion"
+
+# Git version to checkout
+bastion_git_version: "{{ bastion_version }}"
 
 # Whether to install syslog-ng (recommended)
 bastion_install_syslog_ng: true
