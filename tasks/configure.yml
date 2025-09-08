@@ -53,12 +53,6 @@
   when: not bastion_conf_stat.stat.exists
   tags: bastion_check_config
 
-- name: configure | Read current bastion configuration
-  ansible.builtin.slurp:
-    src: /etc/bastion/bastion.conf
-  register: bastion_current_config
-  tags: bastion_read_config
-
 - name: configure | Generate bastion configuration from template
   ansible.builtin.template:
     src: bastion.conf.j2
@@ -68,6 +62,7 @@
   when: bastion_config is defined
   notify: restart sshd
   tags: bastion_apply_config
+  diff: true
 
 - name: configure | Run perl check script
   ansible.builtin.command:
