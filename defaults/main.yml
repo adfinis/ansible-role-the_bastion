@@ -89,3 +89,21 @@ bastion_admin_gpg_keys: []  # List of admin GPG public keys to import
 #     -----BEGIN PGP PUBLIC KEY BLOCK-----
 #     mQGNBF...
 #     -----END PGP PUBLIC KEY BLOCK-----
+
+# External account validation configuration
+bastion_external_validation_enabled: false  # Enable external account validation
+bastion_external_validation_program_path: "/opt/bastion/bin/other/check-active-account-custom.sh"  # Path where the validation program will be deployed
+bastion_external_validation_program_content: ""  # Content of the validation program script (alternative to template)
+bastion_external_validation_program_template: ""  # Path to template file for the validation program (alternative to content)
+bastion_external_validation_program_mode: "0755"  # File permissions for the validation program
+bastion_external_validation_deny_on_failure: true  # Whether to deny access when validation program fails
+
+# External validation via LDAP
+bastion_external_validation_ldap_server: ""
+bastion_external_validation_ldap_base_dn: ""
+bastion_external_validation_ldap_bind_dn: ""
+bastion_external_validation_ldap_bind_password: ""
+bastion_external_validation_ldap_ignore_tls: false
+bastion_external_validation_ldap_required_group: ""  # Optional: require membership in this
+bastion_external_validation_ldap_cache_file: "/var/cache/bastion/active_accounts.cache"
+bastion_external_validation_ldap_cache_ttl: 900  # Cache TTL in seconds"

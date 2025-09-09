@@ -9,7 +9,6 @@ Installs and configures [The Bastion](https://github.com/ovh/the-bastion) SSH ju
 - **Home encryption**: Optional LUKS encryption for user directories
 - **GPG key management**: Automatic setup of encryption and signature keys for ttyrec files and backups
 - **SSH hardening**: Automatic security configuration
-- **Version management**: Safe upgrades with backup support
 
 ## Requirements
 
@@ -174,6 +173,72 @@ EOF
 - Share private keys with all administrators who need to decrypt files
 - Test configuration: `/opt/bastion/bin/cron/osh-encrypt-rsync.pl --config-test`
 
+### External Account Validation
+
+The Bastion supports external account validation through custom scripts that can verify account status against external systems (LDAP, Active Directory, APIs, etc.):
+
+```yaml
+# Enable external account validation
+bastion_external_validation_enabled: true
+
+# Option 1: Deploy script content directly
+bastion_external_validation_program_content: |
+  #!/usr/bin/env bash
+  ACCOUNT="$1"
+  # Check if account exists in allowed accounts file
+  if grep -q "^${ACCOUNT}$" /etc/bastion/allowed_accounts.txt; then
+    exit 0  # Account is active
+  else
+    exit 1  # Account is inactive
+  fi
+
+# Option 2: Use a template (alternative to content)
+bastion_external_validation_program_template: "external-validation-custom.sh.j2"
+
+# Configuration options
+bastion_external_validation_program_path: "/opt/bastion/bin/other/check-active-account-custom.sh"
+bastion_external_validation_program_mode: "0755"
+bastion_external_validation_deny_on_failure: true
+```
+
+**Important Notes:**
+- Either `bastion_external_validation_program_content` OR `bastion_external_validation_program_template` must be provided
+- The script receives the account name as the first argument
+- Exit codes: 0 (active), 1 (inactive), 2-4 (various failure modes)
+
+#### LDAP Validation Example
+
+This role includes an example LDAP validation template (`templates/check-active-account-ldap.sh.j2`) that demonstrates integration with LDAP servers for account validation. This template provides:
+
+- LDAP server connectivity with optional authentication
+- Account validation based on non-expiring accounts
+- Optional group membership requirements
+- Caching mechanism to reduce LDAP queries
+
+```yaml
+# Use the provided LDAP validation template
+bastion_external_validation_enabled: true
+bastion_external_validation_program_template: "check-active-account-ldap.sh.j2"
+
+# LDAP server configuration
+bastion_external_validation_ldap_server: "ldap.example.com"
+bastion_external_validation_ldap_base_dn: "ou=users,dc=example,dc=com"
+bastion_external_validation_ldap_bind_dn: "cn=readonly,dc=example,dc=com"
+bastion_external_validation_ldap_bind_password: "{{ vault_ldap_password }}"
+
+# Optional: require group membership
+bastion_external_validation_ldap_required_group: "cn=bastion-users,ou=groups,dc=example,dc=com"
+
+# Caching configuration
+bastion_external_validation_ldap_cache_file: "/var/cache/bastion/active_accounts.cache"
+bastion_external_validation_ldap_cache_ttl: 300  # 5 minutes
+
+# TLS configuration
+bastion_external_validation_ldap_ignore_tls: false  # Set to true for testing only
+```
+
+**Important:** This is only an example template that demonstrates LDAP integration concepts. You will likely need to adjust the LDAP queries, filters, and logic to match your specific LDAP schema, security requirements, and organizational policies. The template should be reviewed and customized before production use.
+
 ### Custom Configuration
 
 ```yaml
@@ -333,6 +398,30 @@ HA setup creates a master-slave cluster:
 | `bastion_gpg_key_generate` | `true` | Generate bastion GPG key automatically |
 | `bastion_gpg_key_import` | `""` | Import existing bastion GPG key |
 | `bastion_admin_gpg_keys` | `[]` | List of admin GPG public keys (required when GPG enabled) |
+
+### External Validation Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `bastion_external_validation_enabled` | `false` | Enable external account validation |
+| `bastion_external_validation_program_path` | `/opt/bastion/bin/other/check-active-account-custom.sh` | Path where validation program will be deployed |
+| `bastion_external_validation_program_content` | `""` | Content of validation script (alternative to template) |
+| `bastion_external_validation_program_template` | `""` | Template file for validation script (alternative to content) |
+| `bastion_external_validation_program_mode` | `"0755"` | File permissions for validation program |
+| `bastion_external_validation_deny_on_failure` | `true` | Deny access when validation program fails |
+
+#### LDAP Validation Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `bastion_external_validation_ldap_server` | `""` | LDAP server hostname |
+| `bastion_external_validation_ldap_base_dn` | `""` | LDAP base DN for user searches |
+| `bastion_external_validation_ldap_bind_dn` | `""` | LDAP bind DN for authentication (optional) |
+| `bastion_external_validation_ldap_bind_password` | `""` | LDAP bind password (optional) |
+| `bastion_external_validation_ldap_ignore_tls` | `false` | Ignore TLS certificate validation (testing only) |
+| `bastion_external_validation_ldap_required_group` | `""` | Required LDAP group membership (optional) |
+| `bastion_external_validation_ldap_cache_file` | `/var/cache/bastion/active_accounts.cache` | Cache file for LDAP results |
+| `bastion_external_validation_ldap_cache_ttl` | `300` | Cache TTL in seconds |
 
 ### Optional Features
 

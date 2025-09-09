@@ -1,0 +1,48 @@
+---
+# Deploy external account validation program
+
+- name: external_validation | Ensure external validation program directory exists
+  ansible.builtin.file:
+    path: "{{ bastion_external_validation_program_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: bastion_external_validation_enabled
+  tags: bastion_external_validation
+
+- name: external_validation | Deploy validation program from content
+  ansible.builtin.copy:
+    content: "{{ bastion_external_validation_program_content }}"
+    dest: "{{ bastion_external_validation_program_path }}"
+    owner: root
+    group: root
+    mode: "{{ bastion_external_validation_program_mode }}"
+    backup: true
+  when:
+    - bastion_external_validation_enabled
+    - bastion_external_validation_program_content | length > 0
+  notify: restart sshd
+  tags: bastion_external_validation
+
+- name: external_validation | Deploy validation program from template
+  ansible.builtin.template:
+    src: "{{ bastion_external_validation_program_template }}"
+    dest: "{{ bastion_external_validation_program_path }}"
+    owner: root
+    group: root
+    mode: "{{ bastion_external_validation_program_mode }}"
+    backup: true
+  when:
+    - bastion_external_validation_enabled
+    - bastion_external_validation_program_template | length > 0
+  notify: restart sshd
+  tags: bastion_external_validation
+
+- name: external_validation | Remove validation program when disabled
+  ansible.builtin.file:
+    path: "{{ bastion_external_validation_program_path }}"
+    state: absent
+  when: not bastion_external_validation_enabled
+  notify: restart sshd
+  tags: bastion_external_validation

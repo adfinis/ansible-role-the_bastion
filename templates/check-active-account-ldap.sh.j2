@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# Advanced external account validation script template
+# This template demonstrates LDAP integration and API validation
+#
+# Arguments:
+#   $1 - Account name to validate
+#
+# Exit codes:
+#   0 - Account is active (allow access)
+#   Any other code - Account is inactive or error (deny access)
+
+ACCOUNT="$1"
+LOG_TAG="bastion-ldap-validation"
+
+# Configuration - these can be customized via template variables
+LDAP_SERVER="{{ bastion_external_validation_ldap_server }}"
+LDAP_BASE_DN="{{ bastion_external_validation_ldap_base_dn }}"
+LDAP_BIND_DN="{{ bastion_external_validation_ldap_bind_dn }}"
+LDAP_BIND_PASSWORD="{{ bastion_external_validation_ldap_bind_password }}"
+
+{% if bastion_external_validation_ldap_ignore_tls %} 
+export LDAPTLS_REQCERT=never
+{% endif %}
+
+{% if bastion_external_validation_ldap_required_group %}
+# optional: require membership in this group for validation to succeed
+LDAP_REQUIRED_GROUP="{{ bastion_external_validation_ldap_required_group }}"
+{% endif %}
+
+CACHE_FILE="{{ bastion_external_validation_ldap_cache_file }}"
+CACHE_MAX_AGE="{{ bastion_external_validation_ldap_cache_ttl }}"  # in seconds
+
+# Function to log messages
+log_message() {
+    local level="$1"
+    local message="$2"
+    logger -t "$LOG_TAG" -p "auth.$level" "$message"
+}
+
+# Validate input
+if [[ -z "$ACCOUNT" ]]; then
+    log_message "err" "No account name provided"
+    echo "Error: No account name provided" >&2
+    exit 4
+fi
+
+log_message "info" "Validating account: $ACCOUNT"
+
+# Check cache first
+check_cache() {
+    if [[ -f "$CACHE_FILE" ]]; then
+        local cache_age=$(($(date +%s) - $(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0)))
+        if [[ $cache_age -lt $CACHE_MAX_AGE ]]; then
+            if grep -q "^${ACCOUNT}$" "$CACHE_FILE" 2>/dev/null; then
+                log_message "info" "Account $ACCOUNT found in cache (age: ${cache_age}s)"
+                return 0
+            else
+                log_message "info" "Account $ACCOUNT not found in cache (age: ${cache_age}s)"
+                return 1
+            fi
+        else
+            log_message "info" "Cache is stale (age: ${cache_age}s), will refresh"
+        fi
+    fi
+    return 2  # Cache miss or stale
+}
+
+# LDAP validation
+validate_ldap() {
+    if [[ -n "$LDAP_SERVER" && -n "$LDAP_BASE_DN" ]]; then   
+        local ldap_cmd="ldapsearch -x -H ldaps://$LDAP_SERVER -b $LDAP_BASE_DN"
+        if [[ -n "$LDAP_BIND_DN" && -n "$LDAP_BIND_PASSWORD" ]]; then
+            ldap_cmd="$ldap_cmd -D $LDAP_BIND_DN -w $LDAP_BIND_PASSWORD"
+        fi
+        
+        # Build filter: non-expiring account AND member of required group (if specified)
+        local filter="(&(uid=$ACCOUNT)(!(shadowExpire=*)))"
+        if [[ -n "$LDAP_REQUIRED_GROUP" ]]; then
+            filter="(&(uid=$ACCOUNT)(!(shadowExpire=*))(memberOf=$LDAP_REQUIRED_GROUP))"
+        fi
+        
+        if $ldap_cmd "$filter" uid 2>/dev/null | grep -q "uid: $ACCOUNT"; then
+            if [[ -n "$LDAP_REQUIRED_GROUP" ]]; then
+                log_message "info" "Account $ACCOUNT validated via LDAP (non-expiring account, member of required group)"
+            else
+                log_message "info" "Account $ACCOUNT validated via LDAP (non-expiring account)"
+            fi
+            return 0
+        else
+            if [[ -n "$LDAP_REQUIRED_GROUP" ]]; then
+                log_message "info" "Account $ACCOUNT not found in LDAP, has expiration set, or not member of required group"
+            else
+                log_message "info" "Account $ACCOUNT not found in LDAP or has expiration set"
+            fi
+            return 1
+        fi
+    fi
+    return 2  # LDAP not configured
+}
+
+# Update cache with active accounts
+update_cache() {
+    local temp_cache="/tmp/bastion_cache.$$"
+    local updated=false    
+    
+    # Ensure cache directory exists
+    mkdir -p "$(dirname "$CACHE_FILE")" 2>/dev/null || {
+        log_message "warn" "Failed to create cache directory: $(dirname "$CACHE_FILE")"
+        return 2
+    }
+    
+    # Try to get active accounts from LDAP
+    if [[ -n "$LDAP_SERVER" ]] && command -v ldapsearch >/dev/null 2>&1; then
+        local ldap_cmd="ldapsearch -x -H ldap://$LDAP_SERVER -b $LDAP_BASE_DN"
+        if [[ -n "$LDAP_BIND_DN" && -n "$LDAP_BIND_PASSWORD" ]]; then
+            ldap_cmd="$ldap_cmd -D $LDAP_BIND_DN -w $LDAP_BIND_PASSWORD"
+        fi
+        
+        # Build filter: non-expiring accounts AND members of required group (if specified)
+        local filter="(&(objectClass=inetOrgPerson)(!(shadowExpire=*)))"
+        if [[ -n "$LDAP_REQUIRED_GROUP" ]]; then
+            filter="(&(objectClass=inetOrgPerson)(!(shadowExpire=*))(memberOf=$LDAP_REQUIRED_GROUP))"
+        fi
+        
+        # Get accounts that match the filter
+        if $ldap_cmd "$filter" uid 2>/dev/null | grep "^uid:" | cut -d' ' -f2 > "$temp_cache"; then
+            if [[ -n "$LDAP_REQUIRED_GROUP" ]]; then
+                log_message "info" "Updated cache from LDAP ($(wc -l < "$temp_cache") non-expiring accounts in required group)"
+            else
+                log_message "info" "Updated cache from LDAP ($(wc -l < "$temp_cache") non-expiring accounts)"
+            fi
+            mv "$temp_cache" "$CACHE_FILE"
+            
+            updated=true
+        fi
+    fi
+    
+    # Clean up
+    rm -f "$temp_cache"
+    
+    if [[ "$updated" == "false" ]]; then
+        log_message "warn" "Failed to update cache"
+        return 1
+    fi
+    
+    return 0
+}
+
+check_cache
+cache_result=$?
+
+if [[ $cache_result -eq 0 ]]; then
+    # Found in cache
+    exit 0
+elif [[ $cache_result -eq 1 ]]; then
+    # Not found in cache, but cache is fresh
+    exit 1
+else
+    # Cache miss or stale, try direct validation
+    validate_ldap
+    ldap_result=$?
+    
+    if [[ $ldap_result -eq 0 ]]; then
+        # Update cache in background for next time
+        update_cache &
+        exit 0
+    elif [[ $ldap_result -eq 1 ]]; then
+        exit 1
+    else
+        log_message "warn" "Direct validation methods failed, attempting cache update"
+        if update_cache; then
+            if grep -q "^${ACCOUNT}$" "$CACHE_FILE" 2>/dev/null; then
+                log_message "info" "Account $ACCOUNT found after cache update"
+                exit 0
+            else
+                log_message "info" "Account $ACCOUNT not found after cache update"
+                exit 1
+            fi
+        else
+            log_message "err" "Validation failed for account: $ACCOUNT"
+            exit 3
+        fi
+    fi
+fi

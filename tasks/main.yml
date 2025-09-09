@@ -70,6 +70,12 @@
     - bastion
     - bastion_configure
 
+- name: Include external validation program tasks
+  ansible.builtin.include_tasks: external_validation.yml
+  tags:
+    - bastion
+    - bastion_external_validation
+
 - name: Include GPG key setup tasks
   ansible.builtin.include_tasks: gpg.yml
   when: bastion_gpg_enabled | bool
