@@ -4,16 +4,15 @@ Installs and configures [The Bastion](https://github.com/ovh/the-bastion) SSH ju
 
 ## Features
 
-- **Automatic mode detection**: New installation, upgrade, or skip based on version comparison
+- **Automatic mode detection**: New installation or upgrade based on version comparison
 - **High Availability**: Master-slave clustering with automatic synchronization  
-- **Home encryption**: Optional LUKS encryption for user directories
+- **Home encryption**: Optional LUKS encryption for home partition
 - **GPG key management**: Automatic setup of encryption and signature keys for ttyrec files and backups
 - **SSH hardening**: Automatic security configuration
 
 ## Requirements
 
 - Debian 12 or 13
-- `community.general` Ansible collection
 
 ## Quick Start
 
@@ -112,11 +111,11 @@ bastion_admin_gpg_keys:
 **Requirements:**
 - At least one admin public key must be provided when GPG is enabled
 - Admin keys must be generated on secure workstations, NOT on the bastion
-- Multiple admin keys are supported for redundancy
+- Multiple admin keys are supported
 
 #### Generating Admin GPG Keys on Your Local Machine
 
-Generate an Ed25519 GPG key on your secure workstation:
+Generate an ed25519 GPG key on your secure workstation:
 
 ```bash
 # Set your details
@@ -128,7 +127,7 @@ export GPG_COMMENT="The Bastion Admin Key"
 export GPG_PASSPHRASE=$(pwgen -sy 16 1)
 echo "Generated passphrase: $GPG_PASSPHRASE"
 
-# Generate Ed25519 key (recommended)
+# Generate ed25519 key (recommended)
 gpg --batch --pinentry-mode loopback --passphrase-fd 0 \
     --quick-generate-key "$GPG_NAME ($GPG_COMMENT) <$GPG_EMAIL>" ed25519 sign 0 <<< "$GPG_PASSPHRASE"
 
@@ -243,10 +242,10 @@ bastion_external_validation_ldap_ignore_tls: false  # Set to true for testing on
 
 ```yaml
 bastion_config:
+  bastionName: "my-friendly-bastion"
   adminAccounts: "admin,backup-admin"
   enabledGlobalCodes: "ssh,sftp"
   defaultAccountTTL: "90"
-  readOnlySlaveMode: false  # Set to true on slaves
 ```
 
 ## Examples
@@ -346,8 +345,7 @@ The role determines the action based on version comparison:
 
 - **New Install**: No existing installation found
 - **Upgrade**: Target version > installed version  
-- **Skip**: Target version = installed version
-- **Error**: Target version < installed version (downgrade not supported)
+- **Skip**: Target version <= installed version
 
 ### High Availability
 
@@ -437,12 +435,15 @@ HA setup creates a master-slave cluster:
 
 Run Molecule tests:
 
+> [!NOTE]
+> The Bastion creates users with high UIDs which most likely exceed your `MAX_UID`. I couldn't get podman to work with those UIDs in userspace, so sudo it is (unfortunately).
+
 ```bash
 # Test default scenario
-molecule test
+sudo molecule test
 
 # Test HA scenario  
-molecule test -s ha
+sudo molecule test -s ha
 ```
 
 ## License
@@ -451,4 +452,4 @@ GPL-3.0-or-later
 
 ## Author
 
-Created by [Adfinis](https://adfinis.com/)
+Created by [Adfinis AG](https://adfinis.com/) | [GitHub](https://github.com/adfinis)
