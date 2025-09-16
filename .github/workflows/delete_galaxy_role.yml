@@ -1,0 +1,11 @@
+---
+name: Delete role from Ansible Galaxy
+
+# configure manual trigger
+on:
+  workflow_dispatch:
+
+jobs:
+  delete:
+    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-DELETE-role.yaml@v0.5.2
+    secrets: inherit

@@ -1,0 +1,11 @@
+---
+name: Release to Ansible Galaxy
+
+on:
+  release:
+    types: [created, edited, published, released]
+
+jobs:
+  release:
+    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-role-release.yaml@v0.5.2
+    secrets: inherit

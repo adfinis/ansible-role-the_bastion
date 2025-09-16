@@ -1,0 +1,15 @@
+---
+# runs on each push to main and is responsible for creating new tags/releases
+name: Create Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  semantic-release:
+    uses: adfinis/github-workflows-bareos/.github/workflows/semantic-release.yaml@v0.5.2
+    secrets:
+      ADFINISBOT_GITHUB_TOKEN: ${{ secrets.ADFINISBOT_GITHUB_TOKEN }}
