@@ -114,7 +114,7 @@ provisioner:
         bastion_first_admin:
           username: bastionadmin
           # bastion v3.20.00 doesn't support ed25519 keys, support has been added in v3.21.00
-          ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQChX66tWFWbj5OVv4T/z9PrExfznMbDSQ/hQXFyGvYEll2DZWDvqlWc+h1epRdWcDji7yK8BzDxL52R4m8TrFYcSWBUnH6jhmlt1t/Sup4RB4MlTE7KK+kO5zr1ipyQt5IEULzbzBZgkkI4yWX8GoYle6uHEEKy4vqxcqTm28Y54BGppVLS4JGlffGMUTLaEJQeZ+d8DDy/39JQBKzOLck2MkmzsdPWNIxowagnBwONCrhEVamW/9fdMI1F0xim+EiLKHtXmaYo2sms7uo9LpvlnkHTE4XNiokqDLDA6+g1Bb1toa2nxLrZu2WjP1KzhdsQ8zJAObkheeUc/GLb7hle7lCCUfrcvSx0pAEj1Qf1rjVDdtu11NVUKNIEPF3c92J0JusZ1H03n1+h/YU41zFBJi7Y3w+4Av2dykzbxSiYzYdFLpXAj7lbEp2BESent42p1bJ0n3PTOxnjnCNxgQapJUBN+lmSQ1aynQZOFdEpkFg7mlQ/JomW7lD5FJwQjH0= example@adfinis"
+          ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQChX66tWFWbj5OVv4T/z9PrExfznMbDSQ/hQXFyGvYEll2DZWDvqlWc+h1epRdWcDji7yK8BzDxL52R4m8TrFYcSWBUnH6jhmlt1t/Sup4RB4MlTE7KK+kO5zr1ipyQt5IEULzbzBZgkkI4yWX8GoYle6uHEEKy4vqxcqTm28Y54BGppVLS4JGlffGMUTLaEJQeZ+d8DDy/39JQBKzOLck2MkmzsdPWNIxowagnBwONCrhEVamW/9fdMI1F0xim+EiLKHtXmaYo2sms7uo9LpvlnkHTE4XNiokqDLDA6+g1Bb1toa2nxLrZu2WjP1KzhdsQ8zJAObkheeUc/GLb7hle7lCCUfrcvSx0pAEj1Qf1rjVDdtu11NVUKNIEPF3c92J0JusZ1H03n1+h/YU41zFBJi7Y3w+4Av2dykzbxSiYzYdFLpXAj7lbEp2BESent42p1bJ0n3PTOxnjnCNxgQapJUBN+lmSQ1aynQZOFdEpkFg7mlQ/JomW7lD5FJwQjH0= example@adfinis"  # noqa: yaml[line-length]
       gpg_test:
         bastion_encrypt_home: false
         bastion_install_syslog_ng: true
