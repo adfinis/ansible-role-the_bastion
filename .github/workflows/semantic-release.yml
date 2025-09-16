@@ -11,4 +11,5 @@ on:
 jobs:
   semantic-release:
     uses: adfinis/github-workflows-bareos/.github/workflows/semantic-release.yaml@v0.5.2
-    secrets: inherit
+    secrets:
+      ADFINISBOT_GITHUB_TOKEN: ${{ secrets.ADFINISBOT_GITHUB_TOKEN }}
