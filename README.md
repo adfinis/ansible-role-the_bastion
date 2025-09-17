@@ -428,6 +428,7 @@ HA setup creates a master-slave cluster:
 | `bastion_encrypt_home` | `false` | Encrypt /home with LUKS |
 | `bastion_encryption_passphrase` | `""` | LUKS encryption passphrase |
 | `bastion_install_syslog_ng` | `true` | Install syslog-ng |
+| `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_harden_ssh` | `true` | Apply SSH hardening |
 | `bastion_config` | `{}` | Custom bastion.conf options |
 

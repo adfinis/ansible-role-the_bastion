@@ -19,6 +19,9 @@ bastion_git_version: "{{ bastion_version }}"
 # Whether to install syslog-ng (recommended)
 bastion_install_syslog_ng: true
 
+# Install various optional packages
+bastion_install_optional_packages: true
+
 # Whether to install development packages (not recommended for production)
 bastion_install_dev_packages: false
 
