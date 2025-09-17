@@ -16,9 +16,10 @@ bastion_required_packages:
   - gzip
   - git
 
+bastion_syslog_ng_package: syslog-ng
+
 # Optional packages
 bastion_optional_packages:
-  - syslog-ng
   - pamtester
   - libpam-google-authenticator
   - mosh
