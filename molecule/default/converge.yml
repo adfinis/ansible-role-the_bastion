@@ -16,7 +16,7 @@
       ansible.builtin.include_role:
         name: adfinis.the_bastion
       vars:
-        bastion_version: "v3.20.00"
+        bastion_version: "v3.21.00"
       tags: molecule-idempotence-notest
 
     # Then upgrade to the newer version
@@ -24,7 +24,7 @@
       ansible.builtin.include_role:
         name: adfinis.the_bastion
       vars:
-        bastion_version: "v3.21.00"
+        bastion_version: "v3.22.00"
 
 - name: Converge - GPG Test
   hosts: gpg_test

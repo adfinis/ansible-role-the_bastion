@@ -5,7 +5,7 @@
 bastion_install_dir: /opt/bastion
 
 # The Bastion version to install (latest release tag)
-bastion_version: "v3.21.00"
+bastion_version: "v3.22.00"
 
 # Whether to use git clone or tarball installation
 bastion_install_method: tarball  # or 'git'

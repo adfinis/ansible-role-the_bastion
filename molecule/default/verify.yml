@@ -94,7 +94,7 @@
     - name: Verify version file contains expected version
       ansible.builtin.assert:
         that:
-          - (bastion_version_content.content).strip() | b64decode in ['v3.20.00', 'v3.21.00']
+          - (bastion_version_content.content).strip() | b64decode in ['v3.21.00', 'v3.22.00']
         fail_msg: "Version file does not contain expected version"
 
     - name: Check current bastion version
@@ -106,8 +106,8 @@
     - name: Verify version for upgrade test
       ansible.builtin.assert:
         that:
-          - (current_version_content.content | b64decode).strip() == 'v3.21.00'
-        fail_msg: "Upgrade did not result in expected version v3.21.00, got {{ (current_version_content.content | b64decode).strip() }}"
+          - (current_version_content.content | b64decode).strip() == 'v3.22.00'
+        fail_msg: "Upgrade did not result in expected version v3.22.00, got {{ (current_version_content.content | b64decode).strip() }}"
       when: inventory_hostname in groups['upgrade_test'] | default([])
 
     - name: Check for backup directory (upgrade test only)

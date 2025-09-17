@@ -33,7 +33,7 @@ Installs and configures [The Bastion](https://github.com/ovh/the-bastion) SSH ju
 
 ```yaml
 # Version and installation
-bastion_version: "v3.21.00"
+bastion_version: "v3.22.00"
 bastion_install_dir: /opt/bastion
 bastion_install_method: tarball  # or 'git'
 
@@ -372,7 +372,7 @@ HA setup creates a master-slave cluster:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `bastion_version` | `"v3.21.00"` | Version to install/upgrade to |
+| `bastion_version` | `"v3.22.00"` | Version to install/upgrade to |
 | `bastion_install_dir` | `/opt/bastion` | Installation directory |
 | `bastion_install_method` | `tarball` | Source method: `tarball` or `git` |
 | `bastion_first_admin` | `{}` | First admin account config |
