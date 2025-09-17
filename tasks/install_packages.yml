@@ -31,7 +31,7 @@
 - name: install_packages | Install yubico-piv-checker (optional)
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install-yubico-piv-checker.sh -a"
-    creates: /usr/local/bin/yubico-piv-checker
+    creates: /usr/bin/yubico-piv-checker
   when: bastion_install_yubico_piv_checker | bool
   register: bastion_yubico_install
   tags: bastion_install_yubico
@@ -39,7 +39,7 @@
 - name: install_packages | Install mkhash-helper (optional)
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install-mkhash-helper.sh -a"
-    creates: /usr/local/bin/the-bastion-mkhash-helper
+    creates: /usr/bin/the-bastion-mkhash-helper
   when: bastion_install_mkhash_helper | bool
   register: bastion_mkhash_install
   tags: bastion_install_mkhash
