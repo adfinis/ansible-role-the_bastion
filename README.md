@@ -24,7 +24,7 @@ Installs and configures [The Bastion](https://github.com/ovh/the-bastion) SSH ju
       username: "admin"
       ssh_public_key: "ssh-ed25519 AAAA..."
   roles:
-    - ansible-role-the_bastion
+    - adfinis.the_bastion
 ```
 
 ## Configuration
@@ -262,7 +262,7 @@ bastion_config:
     bastion_encrypt_home: true
     bastion_encryption_passphrase: "{{ vault_bastion_passphrase }}"
   roles:
-    - ansible-role-the_bastion
+    - adfinis.the_bastion
 ```
 
 ### HA Master-Slave Setup
@@ -282,7 +282,7 @@ bastion_config:
       username: "admin"
       ssh_public_key: "ssh-rsa AAAAB3... admin@company.com"
   roles:
-    - ansible-role-the_bastion
+    - adfinis.the_bastion
 
 # Slave bastions
 - hosts: bastion_slaves
@@ -294,7 +294,7 @@ bastion_config:
     bastion_config:
       readOnlySlaveMode: true
   roles:
-    - ansible-role-the_bastion
+    - adfinis.the_bastion
 ```
 
 ### Upgrade Example
@@ -306,7 +306,7 @@ bastion_config:
     bastion_version: "v3.22.00"  # Higher version triggers upgrade
     bastion_upgrade_backup_before: true
   roles:
-    - ansible-role-the_bastion
+    - adfinis.the_bastion
 ```
 
 ### GPG-Enabled Bastion
@@ -334,7 +334,7 @@ bastion_config:
         mQGNBGJ9...
         -----END PGP PUBLIC KEY BLOCK-----
   roles:
-    - ansible-role-the_bastion
+    - adfinis.the_bastion
 ```
 
 ## How It Works
