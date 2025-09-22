@@ -49,7 +49,19 @@ bastion_harden_ssh: true
 
 # Backup configuration
 bastion_backup_encryption_enabled: true
-bastion_backup_dir: /root/backups
+bastion_backup_dir: /root/ansible-backups  # Ansible role backups (separate from bastion backups)
+
+# Bastion ACL backup configuration (for osh-backup-acl-keys.sh)
+bastion_acl_backup_enabled: "1"
+bastion_acl_backup_destdir: "/var/backups/bastion"  # Bastion's own backup directory
+bastion_acl_backup_days_to_keep: "90"
+bastion_acl_backup_logfile: ""
+bastion_acl_backup_log_facility: "local6"
+bastion_acl_backup_gpg_keys: ""  # Space-separated list of GPG key IDs for encryption
+bastion_acl_backup_signing_key: ""  # GPG key ID for signing
+bastion_acl_backup_signing_key_passphrase: ""  # Passphrase for signing key
+bastion_acl_backup_push_remote: ""  # Remote host for backup push (e.g., "user@host:/path/")
+bastion_acl_backup_push_options: ""  # Additional options for scp
 
 # Upgrade specific settings
 bastion_upgrade_backup_before: true
