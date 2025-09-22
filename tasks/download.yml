@@ -1,6 +1,25 @@
 ---
 # Download The Bastion source code
 
+- name: download | Check if bastion directory is a git repository
+  ansible.builtin.stat:
+    path: "{{ bastion_install_dir }}/.git"
+  register: bastion_git_dir
+  when:
+    - bastion_effective_install_mode == "upgrade"
+    - bastion_install_method == "git"
+  tags: bastion_update_git
+
+- name: download | Remove existing bastion directory if not a git repository
+  ansible.builtin.file:
+    path: "{{ bastion_install_dir }}"
+    state: absent
+  when:
+    - bastion_effective_install_mode == "upgrade"
+    - bastion_install_method == "git"
+    - not bastion_git_dir.stat.exists
+  tags: bastion_update_git
+
 - name: download | Update git repository (upgrade mode with git)
   ansible.builtin.git:
     repo: "{{ bastion_git_repo }}"
