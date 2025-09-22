@@ -69,10 +69,22 @@
     src: osh-backup-acl-keys.conf.j2
     dest: /etc/bastion/osh-backup-acl-keys.conf
     backup: true
-    mode: "0600"  # Restrictive permissions to protect GPG passphrases
+    mode: "0600"
     owner: root
     group: root
   tags: bastion_acl_backup_config
+  diff: true
+
+- name: configure | Generate encrypt-rsync configuration from template
+  ansible.builtin.template:
+    src: osh-encrypt-rsync.conf.j2
+    dest: /etc/bastion/osh-encrypt-rsync.conf
+    backup: true
+    mode: "0600"
+    owner: root
+    group: root
+  when: bastion_encrypt_rsync_enabled | default(true)
+  tags: bastion_encrypt_rsync_config
   diff: true
 
 - name: configure | Create bastion backup directory
@@ -84,6 +96,18 @@
     group: root
   when: bastion_acl_backup_destdir | length > 0
   tags: bastion_acl_backup_dir
+
+- name: configure | Create encrypt-rsync directory
+  ansible.builtin.file:
+    path: "{{ bastion_encrypt_rsync_encrypt_dir }}"
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+  when:
+    - bastion_encrypt_rsync_enabled | default(true)
+    - bastion_encrypt_rsync_encrypt_dir | length > 0
+  tags: bastion_encrypt_rsync_dir
 
 - name: configure | Run perl check script
   ansible.builtin.command:
