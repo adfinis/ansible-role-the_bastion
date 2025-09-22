@@ -8,7 +8,6 @@ Installs and configures [The Bastion](https://github.com/ovh/the-bastion) SSH ju
 - **High Availability**: Master-slave clustering with automatic synchronization  
 - **Home encryption**: Optional LUKS encryption for home partition
 - **GPG key management**: Automatic setup of encryption and signature keys for ttyrec files and backups
-- **SSH hardening**: Automatic security configuration
 
 ## Requirements
 
@@ -238,6 +237,50 @@ bastion_external_validation_ldap_ignore_tls: false  # Set to true for testing on
 
 **Important:** This is only an example template that demonstrates LDAP integration concepts. You will likely need to adjust the LDAP queries, filters, and logic to match your specific LDAP schema, security requirements, and organizational policies. The template should be reviewed and customized before production use.
 
+### Backup Configuration
+
+The Bastion role supports two types of backups:
+
+1. **Ansible Role Backups**: Created before upgrades to preserve system state
+2. **Bastion ACL Backups**: The Bastion's own backup system for keys and configuration
+
+#### Backup Directory Separation
+
+The role ensures these backup systems use separate directories to avoid conflicts:
+
+```yaml
+# Ansible role backups (created before upgrades)
+bastion_backup_dir: "/root/ansible-backups"
+
+# Bastion's own backup system
+bastion_acl_backup_destdir: "/var/backups/bastion"
+```
+
+#### ACL Backup Configuration
+
+Configure The Bastion's built-in backup system:
+
+```yaml
+# Enable/disable bastion backup system
+bastion_acl_backup_enabled: "1"
+
+# Backup retention
+bastion_acl_backup_days_to_keep: "90"
+
+# GPG encryption for backups
+bastion_acl_backup_gpg_keys: "41FDB9C7 DA97EFD1"  # Space-separated GPG key IDs
+bastion_acl_backup_signing_key: "41FDB9C7"  # Key for signing backups
+bastion_acl_backup_signing_key_passphrase: "secure_passphrase"
+
+# Remote backup push
+bastion_acl_backup_push_remote: "backup@backup-server:/var/backups/bastion/"
+bastion_acl_backup_push_options: "-i /root/.ssh/id_backup"
+
+# Logging
+bastion_acl_backup_log_facility: "local6"
+bastion_acl_backup_logfile: ""  # Empty means use syslog only
+```
+
 ### Custom Configuration
 
 ```yaml
@@ -337,6 +380,32 @@ bastion_config:
     - adfinis.the_bastion
 ```
 
+### Bastion with Backup Configuration
+
+```yaml
+- hosts: bastion
+  become: true
+  vars:
+    bastion_first_admin:
+      username: "admin"
+      ssh_public_key: "ssh-ed25519 AAAA... admin@company.com"
+    
+    # Configure Bastion's backup system
+    bastion_acl_backup_enabled: "1"
+    bastion_acl_backup_destdir: "/var/backups/bastion"
+    bastion_acl_backup_days_to_keep: "30"
+    
+    # GPG encryption for backups
+    bastion_acl_backup_gpg_keys: "41FDB9C7 DA97EFD1"
+    bastion_acl_backup_signing_key: "41FDB9C7"
+    
+    # Remote backup push (optional)
+    bastion_acl_backup_push_remote: "backup@backup-server:/backups/bastion/"
+    bastion_acl_backup_push_options: "-i /root/.ssh/id_backup"
+  roles:
+    - ansible-role-the_bastion
+```
+
 ## How It Works
 
 ### Automatic Mode Detection
@@ -396,6 +465,22 @@ HA setup creates a master-slave cluster:
 | `bastion_gpg_key_generate` | `true` | Generate bastion GPG key automatically |
 | `bastion_gpg_key_import` | `""` | Import existing bastion GPG key |
 | `bastion_admin_gpg_keys` | `[]` | List of admin GPG public keys (required when GPG enabled) |
+
+### Backup Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `bastion_backup_dir` | `"/root/ansible-backups"` | Directory for Ansible role backups |
+| `bastion_acl_backup_enabled` | `"1"` | Enable Bastion's ACL backup system |
+| `bastion_acl_backup_destdir` | `"/var/backups/bastion"` | Directory for Bastion's own backups |
+| `bastion_acl_backup_days_to_keep` | `"90"` | Days to keep old backups |
+| `bastion_acl_backup_logfile` | `""` | Log file path (empty = syslog only) |
+| `bastion_acl_backup_log_facility` | `"local6"` | Syslog facility for logging |
+| `bastion_acl_backup_gpg_keys` | `""` | Space-separated GPG key IDs for encryption |
+| `bastion_acl_backup_signing_key` | `""` | GPG key ID for signing backups |
+| `bastion_acl_backup_signing_key_passphrase` | `""` | Passphrase for signing key |
+| `bastion_acl_backup_push_remote` | `""` | Remote host for backup push (scp format) |
+| `bastion_acl_backup_push_options` | `""` | Additional options for scp |
 
 ### External Validation Variables
 
