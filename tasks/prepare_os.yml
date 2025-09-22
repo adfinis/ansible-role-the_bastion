@@ -27,9 +27,9 @@
     update_cache: true
   tags: bastion_install_required
 
-- name: prepare_os | Install syslog-ng packages
+- name: prepare_os | Install syslog-ng package
   ansible.builtin.package:
-    name: "{{ bastion_syslog_ng_packages }}"
+    name: "{{ bastion_syslog_ng_package }}"
     state: present
   when: bastion_install_syslog_ng | bool
   tags: bastion_install_syslog
