@@ -44,9 +44,6 @@ bastion_config:
 bastion_install_yubico_piv_checker: false
 bastion_install_mkhash_helper: false
 
-# SSH hardening settings (only for new installations)
-bastion_harden_ssh: true
-
 # Backup configuration
 bastion_backup_encryption_enabled: true
 bastion_backup_dir: /root/ansible-backups # Ansible role backups (separate from bastion backups)
