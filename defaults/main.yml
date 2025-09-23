@@ -114,7 +114,6 @@ bastion_gpg_enabled: false
 
 # Bastion GPG key configuration (for signing ttyrec files)
 bastion_gpg_key_generate: true # Generate the bastion GPG key automatically
-bastion_gpg_key_import: "" # Import existing GPG key (alternative to generation)
 
 # Admin GPG key configuration (for encrypting backups and ttyrec files)
 # One or more admin public keys are required for GPG functionality

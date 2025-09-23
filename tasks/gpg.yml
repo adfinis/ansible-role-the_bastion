@@ -23,19 +23,7 @@
   when:
     - bastion_gpg_key_generate | bool
     - not bastion_gpg_key_exists.stat.exists
-    - bastion_gpg_key_import | length == 0
   register: bastion_gpg_generate_result
-  tags: bastion_gpg
-
-- name: gpg | Import existing bastion GPG key
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail && echo "{{ bastion_gpg_key_import }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import
-    creates: /etc/bastion/osh-encrypt-rsync.conf.d/50-gpg-bastion-key.conf
-  when:
-    - bastion_gpg_key_import | length > 0
-    - not bastion_gpg_key_exists.stat.exists
-  register: bastion_gpg_import_result
   tags: bastion_gpg
 
 # === Admin GPG Key Management ===

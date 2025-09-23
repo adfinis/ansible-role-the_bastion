@@ -526,7 +526,6 @@ HA setup creates a master-slave cluster:
 |----------|---------|-------------|
 | `bastion_gpg_enabled` | `false` | Enable GPG encryption and signing |
 | `bastion_gpg_key_generate` | `true` | Generate bastion GPG key automatically |
-| `bastion_gpg_key_import` | `""` | Import existing bastion GPG key |
 | `bastion_admin_gpg_keys` | `[]` | List of admin GPG public keys (required when GPG enabled) |
 
 ### Backup Variables
