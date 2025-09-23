@@ -109,18 +109,6 @@
     - bastion_encrypt_rsync_encrypt_dir | length > 0
   tags: bastion_encrypt_rsync_dir
 
-- name: configure | Run perl check script
-  ansible.builtin.command:
-    cmd: "{{ bastion_install_dir }}/bin/dev/perl-check.sh"
-  register: bastion_perl_check
-  changed_when: false
-  tags: bastion_perl_check
-
-- name: configure | Display perl check results
-  ansible.builtin.debug:
-    var: bastion_perl_check.stdout_lines
-  tags: bastion_perl_check
-
 - name: configure | Ensure SSH service is enabled and started
   ansible.builtin.systemd:
     name: ssh
