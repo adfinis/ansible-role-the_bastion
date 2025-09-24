@@ -45,7 +45,13 @@ bastion_install_yubico_piv_checker: false
 bastion_install_mkhash_helper: false
 
 # MFA related configuration
-bastion_mfa_jit_plugins: [] # List of plugins that require MFA
+bastion_plugin_mfa_config: [] # List of plugins that require MFA
+# Example:
+# bastion_plugin_mfa_config:
+#   - name: selfAddIngressKey
+#     mfa: true
+#   - name: groupInfo
+#     mfa: false
 
 # Backup configuration
 bastion_backup_encryption_enabled: true

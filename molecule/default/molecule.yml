@@ -81,21 +81,25 @@ provisioner:
   inventory:
     group_vars:
       all:
+        bastion_install_syslog_ng: true
+        bastion_encrypt_home: false
         bastion_backup_dir: /root/backups
+        bastion_upgrade_backup_before: true
+        bastion_plugin_mfa_config:
+          - name: selfAddIngressKey
+            mfa: true
+          - name: groupInfo
+            mfa: false
+          - name: accountCreate
       install_tarball:
         bastion_install_method: tarball
       install_git:
         bastion_install_method: git
       new_install:
-        bastion_encrypt_home: false
-        bastion_install_syslog_ng: true
         bastion_first_admin:
           username: bastionadmin
           ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
       upgrade_test:
-        bastion_encrypt_home: false
-        bastion_install_syslog_ng: true
-        bastion_upgrade_backup_before: true
         bastion_first_admin:
           username: bastionadmin
           # bastion v3.20.00 doesn't support ed25519 keys, support has been added in v3.21.00

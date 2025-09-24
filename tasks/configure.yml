@@ -109,6 +109,29 @@
     - bastion_encrypt_rsync_encrypt_dir | length > 0
   tags: bastion_encrypt_rsync_dir
 
+- name: configure | Configure plugins that require MFA
+  ansible.builtin.copy:
+    src: plugin.mfa.conf
+    dest: /etc/bastion/plugin.{{ item.name }}.conf
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ bastion_plugin_mfa_config }}"
+  when:
+    - bastion_plugin_mfa_config | length > 0
+    - item.mfa | default(true)
+  tags: bastion_mfa_plugins
+
+- name: configure | Remove existing plugin MFA config files if no longer needed
+  ansible.builtin.file:
+    path: /etc/bastion/plugin.{{ item.name }}.conf
+    state: absent
+  loop: "{{ bastion_plugin_mfa_config }}"
+  when:
+    - bastion_plugin_mfa_config | length > 0
+    - not item.mfa | default(true)
+  tags: bastion_mfa_plugins
+
 - name: configure | Ensure SSH service is enabled and started
   ansible.builtin.systemd:
     name: ssh

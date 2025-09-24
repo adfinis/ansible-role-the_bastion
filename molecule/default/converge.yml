@@ -25,10 +25,3 @@
         name: adfinis.the_bastion
       vars:
         bastion_version: "v3.22.00"
-
-- name: Converge - GPG Test
-  hosts: gpg_test
-  become: true
-
-  roles:
-    - role: adfinis.the_bastion

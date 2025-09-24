@@ -686,7 +686,7 @@ HA setup creates a master-slave cluster:
 | `bastion_install_syslog_ng` | `true` | Install syslog-ng |
 | `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_config` | `{}` | Custom bastion.conf options |
-| `bastion_mfa_jit_plugins` | `[]` | List of Bastion plugins that require MFA |
+| `bastion_plugin_mfa_config` | `[]` | List of Bastion plugins that require MFA |
 
 ## Testing
 

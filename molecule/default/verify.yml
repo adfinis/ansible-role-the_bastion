@@ -147,3 +147,19 @@
           - bastion_dirs.results[0].stat.exists  # bastionadmin home should exist
         fail_msg: "Bastion admin home directory does not exist"
       when: inventory_hostname in groups['new_install'] | default([])
+
+    - name: Check mfa configuration for plugins
+      ansible.builtin.stat:
+        path: /etc/bastion/plugin.{{ item }}.conf
+      register: mfa_plugin_configs
+      loop:
+        - selfAddIngressKey
+        - accountCreate
+      failed_when: false
+
+    - name: Verify mfa configuration for plugins
+      ansible.builtin.assert:
+        that:
+          - mfa_plugin_configs.results[0].stat.exists  # selfAddIngressKey config should exist
+          - mfa_plugin_configs.results[1].stat.exists  # accountCreate config should exist
+        fail_msg: "MFA plugin configuration file does not exist"
