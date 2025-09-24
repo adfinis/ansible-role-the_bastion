@@ -82,10 +82,11 @@ bastion_encryption_passphrase: !vault |
 
 ### GPG Keys for Encryption and Signature
 
-The Bastion uses two types of GPG keys:
+The Bastion uses different types of GPG keys:
 
 1. **Bastion GPG Key**: Used by the bastion to sign ttyrec files (proves authenticity)
-2. **Admin GPG Keys**: Used to encrypt backups and ttyrec files (for admin decryption)
+2. **Admin GPG Key**: Single key used to encrypt backups and ttyrec files (for admin decryption)
+3. **Additional GPG Keys**: Arbitrary public keys imported to root keyring (for layered encryption)
 
 ```yaml
 # Enable GPG functionality
@@ -94,22 +95,67 @@ bastion_gpg_enabled: true
 # Bastion GPG key (automatic generation recommended)
 bastion_gpg_key_generate: true
 
-# Admin GPG keys (REQUIRED - one or more public keys)
-bastion_admin_gpg_keys:
+# Admin GPG key (single key only - REQUIRED when not using layered encryption)
+# NOTE: Must be empty when using layered encryption (bastion_encrypt_rsync_recipients)
+bastion_admin_gpg_key: |
+  -----BEGIN PGP PUBLIC KEY BLOCK-----
+  mQENBF...  # Single admin public key
+  -----END PGP PUBLIC KEY BLOCK-----
+
+# Additional GPG keys for layered encryption (optional)
+bastion_additional_gpg_keys:
   - |
     -----BEGIN PGP PUBLIC KEY BLOCK-----
-    mQENBF...  # First admin public key
+    mQINBF...  # Auditor public key for first encryption layer
     -----END PGP PUBLIC KEY BLOCK-----
   - |
     -----BEGIN PGP PUBLIC KEY BLOCK-----
-    mQGNBF...  # Second admin public key (optional)
+    mQGNBF...  # Additional key for layered encryption
     -----END PGP PUBLIC KEY BLOCK-----
 ```
 
 **Requirements:**
-- At least one admin public key must be provided when GPG is enabled
+- Either `bastion_admin_gpg_key` OR `bastion_additional_gpg_keys` must be configured when GPG is enabled
+- `bastion_admin_gpg_key` and `bastion_additional_gpg_keys` are mutually exclusive
+- When using `bastion_additional_gpg_keys`, `bastion_acl_backup_gpg_keys` and `bastion_encrypt_rsync_recipients` must be configured to reference the imported keys
+- Only one admin key is supported by the bastion's setup-gpg.sh script
 - Admin keys must be generated on secure workstations, NOT on the bastion
-- Multiple admin keys are supported
+- Additional GPG keys are imported directly to root keyring for multiple encryption recipients of backup files or layered encryption of ttyrec files
+- All keys referenced in `bastion_encrypt_rsync_recipients` or `bastion_acl_backup_gpg_keys` must be imported via `bastion_additional_gpg_keys`
+
+#### Configuration Examples
+
+**Option 1: Simple admin key encryption**
+```yaml
+bastion_gpg_enabled: true
+bastion_admin_gpg_key: |
+  -----BEGIN PGP PUBLIC KEY BLOCK-----
+  mQENBF...  # Single admin key
+  -----END PGP PUBLIC KEY BLOCK-----
+# bastion_additional_gpg_keys is not set (empty)
+```
+
+**Option 2: Multiple encryption keys**
+```yaml
+bastion_gpg_enabled: true
+bastion_additional_gpg_keys:
+  - |  # First key (e.g., auditor)
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    mQINBF...
+    -----END PGP PUBLIC KEY BLOCK-----
+  - |  # Second key (e.g., sysadmin)
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    mQGNBF...
+    -----END PGP PUBLIC KEY BLOCK-----
+
+# For layered encryption:
+bastion_encrypt_rsync_recipients:
+  - ["AUDITOR_KEY_ID"]    # First layer
+  - ["SYSADMIN_KEY_ID"]   # Second layer
+
+# For backup encryption:
+bastion_acl_backup_gpg_keys: "AUDITOR_KEY_ID SYSADMIN_KEY_ID"
+```
 
 #### Generating Admin GPG Keys on Your Local Machine
 
@@ -314,6 +360,50 @@ bastion_encrypt_rsync_rsh: "ssh -p 222 -i /root/.ssh/id_backup"
 bastion_encrypt_rsync_delay_before_remove_days: "7"  # Days before removing after sync
 ```
 
+#### Multiple GPG Keys and Layered Encryption Support
+
+The `bastion_additional_gpg_keys` feature enables several advanced scenarios:
+
+1. **Multiple backup recipients**: Encrypt ACL backups for multiple administrators
+2. **Layered encryption**: Multi-layer GPG encryption for TTYrec files requiring sequential decryption
+
+**Layered Encryption:**
+The `bastion_encrypt_rsync_recipients` configuration supports multi-layer GPG encryption for maximum security. Each layer must be decrypted sequentially, requiring keys from different parties:
+
+- **First layer (auditors)**: The outermost encryption layer, typically for auditors
+- **Second layer (sysadmins)**: The inner encryption layer, typically for system administrators  
+
+For multiple keys or layered encryption to work, all GPG key IDs referenced in `bastion_encrypt_rsync_recipients` or `bastion_acl_backup_gpg_keys` must be imported to the root keyring using `bastion_additional_gpg_keys`:
+
+```yaml
+# Import GPG keys for multiple encryption scenarios
+bastion_additional_gpg_keys:
+  - |  # Auditor key AAAAAAAA
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    mQINBF...
+    -----END PGP PUBLIC KEY BLOCK-----
+  - |  # Auditor key BBBBBBBB  
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    mQGNBF...
+    -----END PGP PUBLIC KEY BLOCK-----
+  - |  # Sysadmin key CCCCCCCC
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    mQINBF...
+    -----END PGP PUBLIC KEY BLOCK-----
+  - |  # Sysadmin key DDDDDDDD
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    mQGNBF...
+    -----END PGP PUBLIC KEY BLOCK-----
+
+# Configure layered encryption for TTYrec files
+bastion_encrypt_rsync_recipients:
+  - ["AAAAAAAA", "BBBBBBBB"]  # First layer (auditors)
+  - ["CCCCCCCC", "DDDDDDDD"]  # Second layer (sysadmins)
+
+# Configure multiple recipients for ACL backups
+bastion_acl_backup_gpg_keys: "AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD"
+```
+
 ### Custom Configuration
 
 ```yaml
@@ -400,7 +490,7 @@ bastion_config:
     bastion_gpg_key_generate: true
     
     # Import admin public keys for encryption (required)
-    bastion_admin_gpg_keys:
+    bastion_admin_gpg_key:
       - |
         -----BEGIN PGP PUBLIC KEY BLOCK-----
         mQENBGH8...
@@ -526,7 +616,7 @@ HA setup creates a master-slave cluster:
 |----------|---------|-------------|
 | `bastion_gpg_enabled` | `false` | Enable GPG encryption and signing |
 | `bastion_gpg_key_generate` | `true` | Generate bastion GPG key automatically |
-| `bastion_admin_gpg_keys` | `[]` | List of admin GPG public keys (required when GPG enabled) |
+| `bastion_admin_gpg_key` | `""` | Admin GPG public key (used for ttyrec and backup encryption) |
 
 ### Backup Variables
 
@@ -538,7 +628,7 @@ HA setup creates a master-slave cluster:
 | `bastion_acl_backup_days_to_keep` | `"90"` | Days to keep old backups |
 | `bastion_acl_backup_logfile` | `""` | Log file path (empty = syslog only) |
 | `bastion_acl_backup_log_facility` | `"local6"` | Syslog facility for logging |
-| `bastion_acl_backup_gpg_keys` | `""` | Space-separated GPG key IDs for encryption (default: bastion_admin_gpg_keys) |
+| `bastion_acl_backup_gpg_keys` | `""` | Space-separated GPG key IDs for encryption (default: bastion_admin_gpg_key) |
 | `bastion_acl_backup_signing_key` | `""` | GPG key ID for signing backups (default: autogenerated bastion key) |
 | `bastion_acl_backup_signing_key_passphrase` | `""` | Passphrase for signing key (default: autogenerated bastion key) |
 | `bastion_acl_backup_push_remote` | `""` | Remote host for backup push (scp format) |
@@ -554,7 +644,7 @@ HA setup creates a master-slave cluster:
 | `bastion_encrypt_rsync_verbose` | `"0"` | Verbosity level (0=normal, 1=verbose, 2=debug) |
 | `bastion_encrypt_rsync_signing_key` | `""` | GPG key ID for signing ttyrec files (will default to autogenerated bastion key) |
 | `bastion_encrypt_rsync_signing_key_passphrase` | `""` | Passphrase for signing key (will default to autogenerated bastion key) |
-| `bastion_encrypt_rsync_recipients` | `[]` | Multi-layer encryption recipients (array of arrays, default: bastion_admin_gpg_keys) |
+| `bastion_encrypt_rsync_recipients` | `[]` | Multi-layer encryption recipients (array of arrays, default: bastion_admin_gpg_key) |
 | `bastion_encrypt_rsync_encrypt_dir` | `"/home/.encrypt"` | Directory for encrypted files |
 | `bastion_encrypt_rsync_ttyrec_delay_days` | `"14"` | Days before encrypting ttyrec files |
 | `bastion_encrypt_rsync_user_logs_delay_days` | `"31"` | Days before encrypting user logs (min 31) |
@@ -587,7 +677,7 @@ HA setup creates a master-slave cluster:
 | `bastion_external_validation_ldap_cache_file` | `/var/cache/bastion/active_accounts.cache` | Cache file for LDAP results |
 | `bastion_external_validation_ldap_cache_ttl` | `300` | Cache TTL in seconds |
 
-### Optional Features
+### Other Features
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -596,6 +686,7 @@ HA setup creates a master-slave cluster:
 | `bastion_install_syslog_ng` | `true` | Install syslog-ng |
 | `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_config` | `{}` | Custom bastion.conf options |
+| `bastion_mfa_jit_plugins` | `[]` | List of Bastion plugins that require MFA |
 
 ## Testing
 

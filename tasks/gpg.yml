@@ -27,14 +27,34 @@
   tags: bastion_gpg
 
 # === Admin GPG Key Management ===
-# Import one or more admin public keys for encrypting backups and ttyrec files
+# Import admin public key for encrypting backups and ttyrec files
+# NOTE: setup-gpg.sh overwrites global settings, incompatible with arbitrary multiple keys for things like layered encryption.
 
-- name: gpg | Validate admin GPG keys are provided
+- name: gpg | Validate gpg configuration
   ansible.builtin.fail:
-    msg: "At least one admin GPG public key is required when GPG is enabled. Set bastion_admin_gpg_keys."
+    msg: >
+      bastion_admin_gpg_key must be empty when using bastion_additional_gpg_keys.
   when:
-    - bastion_gpg_enabled | bool
-    - bastion_admin_gpg_keys | length == 0
+    - bastion_additional_gpg_keys | length > 0
+    - bastion_admin_gpg_key | length > 0
+  tags: bastion_gpg
+
+- name: gpg | Validate admin GPG key is provided when not using multiple keys
+  ansible.builtin.fail:
+    msg: "Either bastion_admin_gpg_key or bastion_additional_gpg_keys must be provided when bastion_gpg_enabled is true"
+  when:
+    - bastion_additional_gpg_keys | length == 0
+    - bastion_admin_gpg_key | length == 0
+  tags: bastion_gpg
+
+- name: gpg | Validate configuration for additional GPG keys
+  ansible.builtin.fail:
+    msg: >
+      When using bastion_additional_gpg_keys, at least one of bastion_acl_backup_gpg_keys
+      and bastion_encrypt_rsync_recipients must be set to reference the imported keys.
+  when:
+    - bastion_additional_gpg_keys | length > 0
+    - (bastion_acl_backup_gpg_keys | length == 0 or bastion_encrypt_rsync_recipients | length == 0)
   tags: bastion_gpg
 
 - name: gpg | Get admin GPG config file before import
@@ -42,22 +62,19 @@
     path: /etc/bastion/osh-encrypt-rsync.conf.d/50-gpg-admins-key.conf
     get_checksum: true
   register: admin_gpg_config_before
-  when: bastion_admin_gpg_keys | length > 0
+  when: bastion_admin_gpg_key | length > 0
   tags: bastion_gpg
 
-- name: gpg | Import admin GPG public keys
+- name: gpg | Import admin GPG public key
   ansible.builtin.shell:
     cmd: |
-      set -o pipefail && echo "{{ item }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import --overwrite
-  loop: "{{ bastion_admin_gpg_keys }}"
-  when:
-    - bastion_admin_gpg_keys | length > 0
-    - item | length > 0
-  register: admin_gpg_import_results
+      set -o pipefail && echo "{{ bastion_admin_gpg_key }}" | {{ bastion_install_dir }}/bin/admin/setup-gpg.sh --import --overwrite
+  when: bastion_admin_gpg_key | length > 0
+  register: admin_gpg_import_result
   changed_when: false  # We'll determine this separately
   failed_when: >-
-    admin_gpg_import_results.rc != 0 and
-     'key you imported (did it exist already?)' not in (admin_gpg_import_results.stderr | default(''))
+    admin_gpg_import_result.rc != 0 and
+     'key you imported (did it exist already?)' not in (admin_gpg_import_result.stderr | default(''))
   tags: bastion_gpg
 
 - name: gpg | Get admin GPG config file after import
@@ -65,7 +82,7 @@
     path: /etc/bastion/osh-encrypt-rsync.conf.d/50-gpg-admins-key.conf
     get_checksum: true
   register: admin_gpg_config_after
-  when: bastion_admin_gpg_keys | length > 0
+  when: bastion_admin_gpg_key | length > 0
   tags: bastion_gpg
 
 - name: gpg | Determine if admin GPG config changed
@@ -77,7 +94,53 @@
          admin_gpg_config_before.stat.checksum != admin_gpg_config_after.stat.checksum)
       }}
   when:
-    - bastion_admin_gpg_keys | length > 0
+    - bastion_admin_gpg_key | length > 0
     - admin_gpg_config_before is defined
     - admin_gpg_config_after is defined
+  tags: bastion_gpg
+
+# === Multiple GPG Key Management ===
+# Import multiple additional GPG keys for features like layered encryption of ttyrec files or multiple backup recipients.
+
+- name: gpg | Import additional GPG keys to root keyring
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      echo "{{ item }}" | gpg --import --batch --yes
+  loop: "{{ bastion_additional_gpg_keys }}"
+  when:
+    - bastion_additional_gpg_keys | length > 0
+    - item | length > 0
+  register: additional_gpg_import_results
+  changed_when: "'imported:' in additional_gpg_import_results.stderr and ': 1' in additional_gpg_import_results.stderr"
+  failed_when: >-
+    additional_gpg_import_results.rc != 0 and
+    'already in keyring' not in additional_gpg_import_results.stderr
+  tags: bastion_gpg
+
+- name: gpg | Get imported key IDs for trust setting
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      echo "{{ item }}" | gpg --show-keys --with-colons | awk -F: '/^fpr:/ {print $10}' | head -n1
+  loop: "{{ bastion_additional_gpg_keys }}"
+  when:
+    - bastion_additional_gpg_keys | length > 0
+    - item | length > 0
+  register: additional_gpg_key_ids
+  changed_when: false
+  tags: bastion_gpg
+
+- name: gpg | Set ultimate trust for additional GPG keys
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      echo "{{ item.stdout }}:6:" | gpg --import-ownertrust --batch --yes
+  loop: "{{ additional_gpg_key_ids.results }}"
+  when:
+    - bastion_additional_gpg_keys | length > 0
+    - item.stdout is defined
+    - item.stdout | length > 0
+  register: additional_gpg_trust_results
+  changed_when: "'ownertrust changed' in additional_gpg_trust_results.stderr or 'new ownertrust' in additional_gpg_trust_results.stderr"
   tags: bastion_gpg

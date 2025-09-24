@@ -70,21 +70,6 @@ platforms:
       - upgrade_test
       - install_git
 
-  - name: debian13-bastion-gpg
-    image: docker.io/geerlingguy/docker-debian13-ansible:latest
-    pre_build_image: true
-    privileged: true
-    command: /lib/systemd/systemd
-    capabilities:
-      - SYS_ADMIN
-    cgroupns_mode: host
-    userns_mode: host
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:rw
-    groups:
-      - gpg_test
-      - install_tarball
-
 provisioner:
   name: ansible
   config_options:
@@ -115,30 +100,6 @@ provisioner:
           username: bastionadmin
           # bastion v3.20.00 doesn't support ed25519 keys, support has been added in v3.21.00
           ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQChX66tWFWbj5OVv4T/z9PrExfznMbDSQ/hQXFyGvYEll2DZWDvqlWc+h1epRdWcDji7yK8BzDxL52R4m8TrFYcSWBUnH6jhmlt1t/Sup4RB4MlTE7KK+kO5zr1ipyQt5IEULzbzBZgkkI4yWX8GoYle6uHEEKy4vqxcqTm28Y54BGppVLS4JGlffGMUTLaEJQeZ+d8DDy/39JQBKzOLck2MkmzsdPWNIxowagnBwONCrhEVamW/9fdMI1F0xim+EiLKHtXmaYo2sms7uo9LpvlnkHTE4XNiokqDLDA6+g1Bb1toa2nxLrZu2WjP1KzhdsQ8zJAObkheeUc/GLb7hle7lCCUfrcvSx0pAEj1Qf1rjVDdtu11NVUKNIEPF3c92J0JusZ1H03n1+h/YU41zFBJi7Y3w+4Av2dykzbxSiYzYdFLpXAj7lbEp2BESent42p1bJ0n3PTOxnjnCNxgQapJUBN+lmSQ1aynQZOFdEpkFg7mlQ/JomW7lD5FJwQjH0= example@adfinis"  # noqa: yaml[line-length]
-      gpg_test:
-        bastion_encrypt_home: false
-        bastion_install_syslog_ng: true
-        bastion_gpg_enabled: true
-        bastion_gpg_key_generate: true
-        bastion_admin_gpg_keys:
-          - |
-            -----BEGIN PGP PUBLIC KEY BLOCK-----
-
-            mDMEaLdE/hYJKwYBBAHaRw8BAQdAoVX49393bHfqq2hiRB9n2Aevkga4y4GiboAX
-            UIzJLP60OUJhc3Rpb24gQWRtaW4gKFRoZSBCYXN0aW9uIEFkbWluIEtleSkgPGFk
-            bWluQGV4YW1wbGUuY29tPoiQBBMWCgA4FiEEEmJOhKLv4vv27KO+TfpJ88VnVTwF
-            Ami3RP4CGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQTfpJ88VnVTzZUwEA
-            mM0OPm17xjwcd+0I/KLLPJFkn+SeK35FQ7RK2vPXjacA/1c460/bD++SWJ/JoJbt
-            eIQal1GsWGnQUagsWnmBXZgLuDgEaLdFGRIKKwYBBAGXVQEFAQEHQN/28IPpF5SM
-            X9kzT/6IyvT20KhcWwyLWki20cGQO8tBAwEIB4h4BBgWCgAgFiEEEmJOhKLv4vv2
-            7KO+TfpJ88VnVTwFAmi3RRkCGwwACgkQTfpJ88VnVTzwMAEA+pQ+HiFiTuKIPe8S
-            IQFhl671wU8rxu5T8/IwldthwrYBAIi7CENu0TixKF+BcmuTqdLCZrl2la4985WV
-            nm0BS/oL
-            =FAxu
-            -----END PGP PUBLIC KEY BLOCK-----
-        bastion_first_admin:
-          username: bastionadmin
-          ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
 
 verifier:
   name: ansible

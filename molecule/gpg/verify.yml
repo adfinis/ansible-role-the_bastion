@@ -1,0 +1,220 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Check that The Bastion is installed
+      ansible.builtin.stat:
+        path: /opt/bastion/bin
+      register: bastion_binary
+
+    - name: Verify bastion binary directory exists
+      ansible.builtin.assert:
+        that:
+          - bastion_binary.stat.exists
+          - bastion_binary.stat.isdir
+        fail_msg: "The Bastion binary directory does not exist"
+
+    - name: Check bastion configuration file
+      ansible.builtin.stat:
+        path: /etc/bastion/bastion.conf
+      register: bastion_config_file
+
+    - name: Verify bastion configuration exists
+      ansible.builtin.assert:
+        that:
+          - bastion_config_file.stat.exists
+        fail_msg: "The Bastion configuration file does not exist"
+
+    - name: Check that admin account was created
+      ansible.builtin.command:
+        cmd: getent passwd bastionadmin
+      register: admin_account
+      changed_when: false
+      failed_when: false
+
+    - name: Verify admin account exists
+      ansible.builtin.assert:
+        that:
+          - admin_account.rc == 0
+        fail_msg: "Admin account was not created"
+
+    - name: Check SSH service is running
+      ansible.builtin.service_facts:
+
+    - name: Verify SSH service is running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['ssh.service'].state == 'running'
+        fail_msg: "SSH service is not running"
+
+    - name: Check ttyrec is installed
+      ansible.builtin.command:
+        cmd: which ttyrec
+      register: ttyrec_check
+      changed_when: false
+
+    - name: Verify ttyrec is installed
+      ansible.builtin.assert:
+        that:
+          - ttyrec_check.rc == 0
+        fail_msg: "ttyrec is not installed"
+
+    - name: Test bastion perl modules
+      ansible.builtin.command:
+        cmd: /opt/bastion/bin/dev/perl-check.sh
+      register: perl_check
+      changed_when: false
+
+    - name: Verify perl modules are working
+      ansible.builtin.assert:
+        that:
+          - perl_check.rc == 0
+        fail_msg: "Perl modules check failed"
+
+    - name: Check bastion version file exists
+      ansible.builtin.stat:
+        path: /etc/bastion/version
+      register: bastion_version_file
+
+    - name: Verify bastion version file exists
+      ansible.builtin.assert:
+        that:
+          - bastion_version_file.stat.exists
+        fail_msg: "The Bastion version file does not exist"
+
+    - name: Read bastion version file content
+      ansible.builtin.slurp:
+        src: /etc/bastion/version
+      register: bastion_version_content
+
+    - name: Verify version file contains expected version
+      ansible.builtin.assert:
+        that:
+          - (bastion_version_content.content).strip() | b64decode in ['v3.21.00', 'v3.22.00']
+        fail_msg: "Version file does not contain expected version"
+
+    - name: Check bastion home directory structure
+      ansible.builtin.stat:
+        path: "/home/{{ item }}"
+      register: bastion_dirs
+      loop:
+        - bastionadmin
+        - keykeeper
+        - allowkeeper
+        - healthcheck
+        - bastionsync
+        - keyreader
+        - logkeeper
+        - passkeeper
+        - proxyhttp
+      failed_when: false
+
+    - name: Verify bastion directories exist (new installations)
+      ansible.builtin.assert:
+        that:
+          - bastion_dirs.results[0].stat.exists  # bastionadmin home should exist
+        fail_msg: "Bastion admin home directory does not exist"
+
+    # GPG tests with single admin key
+    - name: Check if GPG bastion key configuration exists
+      ansible.builtin.stat:
+        path: /etc/bastion/osh-encrypt-rsync.conf.d/50-gpg-bastion-key.conf
+      register: gpg_bastion_config
+      when: inventory_hostname in groups['gpg_test'] | default([])
+
+    - name: Verify GPG bastion key configuration exists
+      ansible.builtin.assert:
+        that:
+          - gpg_bastion_config.stat.exists
+        fail_msg: "GPG bastion key configuration file does not exist"
+      when: inventory_hostname in groups['gpg_test'] | default([])
+
+    - name: Check GPG keys in root keyring
+      ansible.builtin.command:
+        cmd: gpg --list-keys
+      register: gpg_keys_list
+      changed_when: false
+      when: inventory_hostname in groups['gpg_test'] | default([])
+
+    - name: Verify admin GPG key is imported
+      ansible.builtin.assert:
+        that:
+          - "'admin@example.com' in gpg_keys_list.stdout"
+        fail_msg: "Admin GPG key was not imported"
+      when: inventory_hostname in groups['gpg_test'] | default([])
+
+    - name: Test GPG encryption configuration
+      ansible.builtin.command:
+        cmd: /opt/bastion/bin/cron/osh-encrypt-rsync.pl --config-test
+      register: gpg_config_test
+      changed_when: false
+      when: inventory_hostname in groups['gpg_test'] | default([])
+
+    - name: Verify GPG encryption configuration test passes
+      ansible.builtin.assert:
+        that:
+          - gpg_config_test.rc == 0
+        fail_msg: "GPG encryption configuration test failed"
+      when: inventory_hostname in groups['gpg_test'] | default([])
+
+    # GPG tests with multi layered encryption of ttyrec files
+
+    - name: Check that admin GPG key configuration does NOT exist (multi-layer scenario)
+      ansible.builtin.stat:
+        path: /etc/bastion/osh-encrypt-rsync.conf.d/50-gpg-admins-key.conf
+      register: admin_key_config_multi
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Verify admin GPG key configuration does not exist when using additional keys
+      ansible.builtin.assert:
+        that:
+          - not admin_key_config_multi.stat.exists
+        fail_msg: "Admin GPG key configuration should not exist when using additional keys"
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Check that additional GPG keys are imported to root keyring
+      ansible.builtin.command:
+        cmd: gpg --list-keys --with-colons
+      register: gpg_keys_multi
+      changed_when: false
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Verify additional keys are in keyring
+      ansible.builtin.assert:
+        that:
+          - "'12624E84A2EFE2FBF6ECA3BE4DFA49F3C567553C' in gpg_keys_multi.stdout"  # Auditor key
+          - "'33FB3A0DAEEA2ACB37C0F084D92A21FAF770BE1F' in gpg_keys_multi.stdout"  # Sysadmin key
+        fail_msg: "Additional GPG keys not found in root keyring"
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Check that additional keys have ultimate trust
+      ansible.builtin.command:
+        cmd: gpg --export-ownertrust
+      register: gpg_trust_multi
+      changed_when: false
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Verify additional keys have ultimate trust
+      ansible.builtin.assert:
+        that:
+          - "'12624E84A2EFE2FBF6ECA3BE4DFA49F3C567553C:6:' in gpg_trust_multi.stdout"
+          - "'33FB3A0DAEEA2ACB37C0F084D92A21FAF770BE1F:6:' in gpg_trust_multi.stdout"
+        fail_msg: "Additional GPG keys do not have ultimate trust"
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Test encrypt-rsync configuration with layered encryption
+      ansible.builtin.command:
+        cmd: /opt/bastion/bin/cron/osh-encrypt-rsync.pl --config-test
+      register: gpg_config_test_multi
+      changed_when: false
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])
+
+    - name: Verify GPG layered encryption configuration test passes
+      ansible.builtin.assert:
+        that:
+          - gpg_config_test_multi.rc == 0
+        fail_msg: "GPG layered encryption configuration test failed"
+      when: inventory_hostname in groups['gpg_test_multi_layer_encryption'] | default([])

@@ -1,0 +1,130 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: podman
+
+platforms:
+  - name: debian13-bastion-gpg
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - gpg_test
+      - install_tarball
+
+  - name: debian13-bastion-gpg-multi-layer-encryption
+    image: docker.io/geerlingguy/docker-debian13-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: /lib/systemd/systemd
+    capabilities:
+      - SYS_ADMIN
+    cgroupns_mode: host
+    userns_mode: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    groups:
+      - gpg_test_multi_layer_encryption
+      - install_tarball
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
+    ssh_connection:
+      pipelining: false
+  inventory:
+    group_vars:
+      all:
+        bastion_backup_dir: /root/backups
+      install_tarball:
+        bastion_install_method: tarball
+      new_install:
+        bastion_encrypt_home: false
+        bastion_install_syslog_ng: true
+        bastion_first_admin:
+          username: bastionadmin
+          ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
+      gpg_test:
+        bastion_encrypt_home: false
+        bastion_install_syslog_ng: true
+        bastion_gpg_enabled: true
+        bastion_gpg_key_generate: true
+        bastion_admin_gpg_key: |
+            -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+            mDMEaLdE/hYJKwYBBAHaRw8BAQdAoVX49393bHfqq2hiRB9n2Aevkga4y4GiboAX
+            UIzJLP60OUJhc3Rpb24gQWRtaW4gKFRoZSBCYXN0aW9uIEFkbWluIEtleSkgPGFk
+            bWluQGV4YW1wbGUuY29tPoiQBBMWCgA4FiEEEmJOhKLv4vv27KO+TfpJ88VnVTwF
+            Ami3RP4CGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQTfpJ88VnVTzZUwEA
+            mM0OPm17xjwcd+0I/KLLPJFkn+SeK35FQ7RK2vPXjacA/1c460/bD++SWJ/JoJbt
+            eIQal1GsWGnQUagsWnmBXZgLuDgEaLdFGRIKKwYBBAGXVQEFAQEHQN/28IPpF5SM
+            X9kzT/6IyvT20KhcWwyLWki20cGQO8tBAwEIB4h4BBgWCgAgFiEEEmJOhKLv4vv2
+            7KO+TfpJ88VnVTwFAmi3RRkCGwwACgkQTfpJ88VnVTzwMAEA+pQ+HiFiTuKIPe8S
+            IQFhl671wU8rxu5T8/IwldthwrYBAIi7CENu0TixKF+BcmuTqdLCZrl2la4985WV
+            nm0BS/oL
+            =FAxu
+            -----END PGP PUBLIC KEY BLOCK-----
+        bastion_first_admin:
+          username: bastionadmin
+          ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
+      gpg_test_multi_layer_encryption:
+        bastion_encrypt_home: false
+        bastion_install_syslog_ng: true
+        bastion_gpg_enabled: true
+        bastion_gpg_key_generate: true
+        bastion_admin_gpg_key: ""  # Must be empty when using additional keys
+        bastion_additional_gpg_keys:
+          - |
+            -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+            mDMEaNQGBBYJKwYBBAHaRw8BAQdAWV5arBSD36jP+5kKqG3eF7t4+BaY5SdanuTl
+            D/TxluO0P0Jhc3Rpb24gQXVkaXRvciAoVGhlIEJhc3Rpb24gQXVkaXRvciBLZXkp
+            IDxhdWRpdG9yQGV4YW1wbGUuY29tPoiQBBMWCgA4FiEEM/s6Da7qKss3wPCE2Soh
+            +vdwvh8FAmjUBgQCGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQ2Soh+vdw
+            vh+xnQEA6ML2h9AX2YbYtwAwEnwsdjrEx5S7G0GiZz+prQpYQVcBAPmevGEBKXmc
+            3CD6WulQWudHIW5uGUL8eiYgQ9QghWkKuDgEaNQGFhIKKwYBBAGXVQEFAQEHQDeD
+            bAYNHwM7cUBdasGgrNzzAk4pCbzh2ixHjTeWBP5tAwEIB4h4BBgWCgAgFiEEM/s6
+            Da7qKss3wPCE2Soh+vdwvh8FAmjUBhYCGwwACgkQ2Soh+vdwvh9QmAEA+KGyJe12
+            +81q2AfWiBopGDVT5KEQ0KuYkc+h+Jl6NAYA/2N+qtv3GVe4JYcZ53coYNIQub0I
+            wCHGFNWpjwQjuy8J
+            =uZ13
+            -----END PGP PUBLIC KEY BLOCK-----
+          - |
+            -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+            mDMEaLdE/hYJKwYBBAHaRw8BAQdAoVX49393bHfqq2hiRB9n2Aevkga4y4GiboAX
+            UIzJLP60OUJhc3Rpb24gQWRtaW4gKFRoZSBCYXN0aW9uIEFkbWluIEtleSkgPGFk
+            bWluQGV4YW1wbGUuY29tPoiQBBMWCgA4FiEEEmJOhKLv4vv27KO+TfpJ88VnVTwF
+            Ami3RP4CGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQTfpJ88VnVTzZUwEA
+            mM0OPm17xjwcd+0I/KLLPJFkn+SeK35FQ7RK2vPXjacA/1c460/bD++SWJ/JoJbt
+            eIQal1GsWGnQUagsWnmBXZgLuDgEaLdFGRIKKwYBBAGXVQEFAQEHQN/28IPpF5SM
+            X9kzT/6IyvT20KhcWwyLWki20cGQO8tBAwEIB4h4BBgWCgAgFiEEEmJOhKLv4vv2
+            7KO+TfpJ88VnVTwFAmi3RRkCGwwACgkQTfpJ88VnVTzwMAEA+pQ+HiFiTuKIPe8S
+            IQFhl671wU8rxu5T8/IwldthwrYBAIi7CENu0TixKF+BcmuTqdLCZrl2la4985WV
+            nm0BS/oL
+            =FAxu
+            -----END PGP PUBLIC KEY BLOCK-----
+        bastion_encrypt_rsync_recipients:
+          - ["F770BE1F"]  # Auditor key ID (first layer)
+          - ["C567553C"]  # Sysadmin key ID (second layer)
+        bastion_acl_backup_gpg_keys: "C567553C F770BE1F"  # Space-separated key IDs
+        bastion_first_admin:
+          username: bastionadmin
+          ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
+
+verifier:
+  name: ansible

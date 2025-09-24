@@ -1,0 +1,6 @@
+---
+- name: Converge - New Installation
+  hosts: all
+  become: true
+  roles:
+    - role: adfinis.the_bastion
