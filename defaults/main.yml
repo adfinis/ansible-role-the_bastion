@@ -126,7 +126,7 @@ bastion_gpg_key_generate: true # Generate the bastion GPG key automatically
 
 # Admin GPG key configuration (for encrypting backups and ttyrec files)
 # Only one admin public key is supported by the bastion setup-gpg.sh script
-# NOTE: When using layered encryption (bastion_encrypt_rsync_recipients), 
+# NOTE: When using layered encryption (bastion_encrypt_rsync_recipients),
 #       this must be empty as setup-gpg.sh will overwrite global settings
 bastion_admin_gpg_key: "" # Single admin GPG public key to import
 # Example:
