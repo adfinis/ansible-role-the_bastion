@@ -25,3 +25,9 @@
     name: osh-sync-watcher
     state: restarted
   listen: restart osh-sync-watcher
+
+- name: Restart syslog-ng
+  ansible.builtin.systemd:
+    name: syslog-ng
+    state: restarted
+  listen: restart syslog-ng

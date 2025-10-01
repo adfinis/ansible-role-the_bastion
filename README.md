@@ -66,6 +66,18 @@ bastion_ha_ssh_key_path: "/root/.ssh/id_master2slave"
 bastion_ha_sync_user: "bastionsync"
 ```
 
+### Remote Syslog
+
+Forward bastion logs to a remote syslog server:
+
+```yaml
+# Remote syslog configuration
+bastion_remote_syslog_enabled: true
+bastion_remote_syslog_host: "192.168.16.10"
+bastion_remote_syslog_port: 514
+bastion_remote_syslog_protocol: "udp"
+```
+
 ### Home Encryption
 
 >[!WARNING]
@@ -687,6 +699,10 @@ HA setup creates a master-slave cluster:
 | `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_config` | `{}` | Custom bastion.conf options |
 | `bastion_plugin_mfa_config` | `[]` | List of Bastion plugins that require MFA |
+| `bastion_remote_syslog_enabled` | `false` | Enable remote syslog destination |
+| `bastion_remote_syslog_host` | `""` | Remote syslog server IP address |
+| `bastion_remote_syslog_port` | `514` | Remote syslog server port |
+| `bastion_remote_syslog_protocol` | `"udp"` | Remote syslog protocol |
 
 ## Testing
 

@@ -96,3 +96,10 @@
   tags:
     - bastion
     - bastion_ha
+
+- name: Include syslog configuration tasks
+  ansible.builtin.include_tasks: syslog.yml
+  when: bastion_install_syslog_ng | bool
+  tags:
+    - bastion
+    - bastion_syslog
