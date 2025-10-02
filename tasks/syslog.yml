@@ -1,0 +1,45 @@
+---
+# Syslog configuration tasks for The Bastion
+
+- name: syslog | Ensure syslog-ng service is started and enabled
+  ansible.builtin.systemd_service:
+    name: syslog-ng
+    enabled: true
+    state: started
+  tags: bastion_syslog_service
+
+- name: syslog | Add remote syslog configuration to 20-bastion.conf
+  ansible.builtin.blockinfile:
+    path: /etc/syslog-ng/conf.d/20-bastion.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Remote syslog configuration"
+    block: |
+      # Remote syslog destination
+      destination d_bastion_all_remote {
+          network("{{ bastion_remote_syslog_host }}"
+              transport("{{ bastion_remote_syslog_protocol }}") port({{ bastion_remote_syslog_port }})
+          );
+      };
+
+      log {
+          source(s_src);
+          parser(p_bastion_msg);
+          filter(f_bastion);
+          destination(d_bastion_all_remote);
+      };
+    backup: true
+  when:
+    - bastion_remote_syslog_enabled | bool
+    - bastion_remote_syslog_host | length > 0
+  notify: restart syslog-ng
+  tags: bastion_syslog_remote
+
+- name: syslog | Remove remote syslog configuration from 20-bastion.conf
+  ansible.builtin.blockinfile:
+    path: /etc/syslog-ng/conf.d/20-bastion.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Remote syslog configuration"
+    state: absent
+    backup: true
+  when:
+    - not (bastion_remote_syslog_enabled | bool and bastion_remote_syslog_host | length > 0)
+  notify: restart syslog-ng
+  tags: bastion_syslog_remote

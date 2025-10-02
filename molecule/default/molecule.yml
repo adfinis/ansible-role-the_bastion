@@ -91,6 +91,10 @@ provisioner:
           - name: groupInfo
             mfa: false
           - name: accountCreate
+        bastion_remote_syslog_enabled: true
+        bastion_remote_syslog_host: "127.0.0.1"
+        bastion_remote_syslog_port: 514
+        bastion_remote_syslog_protocol: "udp"
       install_tarball:
         bastion_install_method: tarball
       install_git:
