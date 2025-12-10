@@ -17,8 +17,8 @@
   ansible.builtin.assert:
     that:
       - bastion_encryption_passphrase is defined
-      - bastion_encryption_passphrase | length > 8
-    fail_msg: "bastion_encryption_passphrase must be defined and at least 8 characters long when bastion_encrypt_home is true"
+      - bastion_encryption_passphrase | length > 1
+    fail_msg: "bastion_encryption_passphrase must be defined and not empty when bastion_encrypt_home is true"
   when:
     - bastion_encrypt_home | bool
     - not home_already_encrypted | bool
