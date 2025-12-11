@@ -225,7 +225,7 @@
 # ttyrecFilenameFormat (string)
 #    DESC: Sets the filename format of the output files of ttyrec for a given session. Magic tokens are: ``&bastionname``, ``&uniqid``, ``&account``, ``&ip``, ``&port``, ``&user`` (they'll be replaced by the corresponding values of the current session). Then, this string (automatically prepended with the correct folder) will be passed to ttyrec's ``-F`` parameter, which uses ``strftime()`` to expand it, so the usual character conversions will be done (``%Y`` for the year, ``%H`` for the hour, etc., see ``man strftime``). Note that in a addition to the usual ``strftime()`` conversion specifications, ttyrec also supports ``#usec#``, to be replaced by the current microsecond value of the time.
 # DEFAULT: "%Y-%m-%d.%H-%M-%S.#usec#.&uniqid.&account.&user.&ip.&port.ttyrec"
-"ttyrecFilenameFormat": {{ bastion_config.ttyrecFilenameFormat | default("%Y-%m-%d.%H-%M-%S.#usec#.&uniqid.&account.&user.&ip.&port.ttyrec") | to_json }},
+"ttyrecFilenameFormat": {{ bastion_config.ttyrecFilenameFormat | default("%Y-%m-%d.%H-%M-%S.#usec#.&uniqid.&account.&user.&ip.&port.via.&proxyuser.&proxyip.&proxyport.ttyrec" if bastion_is_adfinis_fork else "%Y-%m-%d.%H-%M-%S.#usec#.&uniqid.&account.&user.&ip.&port.ttyrec") | to_json }},
 #
 # ttyrecAdditionalParameters (array of strings)
 #    DESC: Additional parameters you want to pass to ``ttyrec`` invocation. Useful, for example, to enable on-the-fly compression, disable cheatcodes, or set/unset any other ``ttyrec`` option. This is an ARRAY, not a string.
@@ -448,6 +448,40 @@
 #          - duo: enable the use of the Duo PAM module (pam_duo.so), of course you need to set it up correctly in your `/etc/pam.d/sshd` file.
 # DEFAULT: 'google-authenticator'
 "TOTPProvider": {{ bastion_config.TOTPProvider | default("google-authenticator") | to_json }},
+#
+{% if bastion_is_adfinis_fork | default(false) %}
+#################
+# > Port-forwarding options
+# >> Options to customize the port forwarding feature
+#
+# portForwardingEnabled (boolean)
+#     DESC: If set to ``true``, will enable port forwarding features
+#  DEFAULT: false
+"portForwardingEnabled": {{ bastion_config.portForwardingEnabled | default(false) | to_json }},
+#
+# portForwardingLocalPortMin (int >= 1024 and <= 65535)
+#     DESC: Minimum allowed local port for local port forwarding.
+#  DEFAULT: 20000
+"portForwardingLocalPortMin": {{ bastion_config.portForwardingLocalPortMin | default(20000) | to_json }},
+#
+# portForwardingLocalPortMax (int >= 1024 and <= 65535)
+#     DESC: Maximum allowed local port for local port forwarding.
+#           Make sure that ``portForwardingLocalPortMax`` is higher than ``portForwardingLocalPortMin``.
+#           The local port range must not use high ports used by outgoing connections. Check ``/proc/sys/net/ipv4/ip_local_port_range``
+#  DEFAULT: 30000
+"portForwardingLocalPortMax": {{ bastion_config.portForwardingLocalPortMax | default(30000) | to_json }},
+#
+# portForwardingMaxPerUser (int >= 0)
+#     DESC: Maximum number of allowed port forwardings per user. A value of 0 means unlimited.
+#  DEFAULT: 20
+"portForwardingMaxPerUser": {{ bastion_config.portForwardingMaxPerUser | default(20) | to_json }},
+#
+# portForwardingMaxPerGroup (int >= 0)
+#     DESC: Maximum number of allowed port forwardings per group. A value of 0 means unlimited.
+#  DEFAULT: 50
+"portForwardingMaxPerGroup": {{ bastion_config.portForwardingMaxPerGroup | default(50) | to_json }},
+#
+{% endif %}
 #
 #################
 # > Other options

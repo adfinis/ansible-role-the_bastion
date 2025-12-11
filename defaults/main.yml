@@ -13,6 +13,10 @@ bastion_install_method: tarball # or 'git'
 # Repository for The Bastion
 bastion_git_repo: "https://github.com/ovh/the-bastion"
 
+# Whether the bastion source code is based on the adfinis fork
+# https://github.com/adfinis-forks/the-bastion
+bastion_is_adfinis_fork: "{{ bastion_git_repo == 'https://github.com/adfinis-forks/the-bastion' }}"
+
 # Git version to checkout
 bastion_git_version: "{{ bastion_version }}"
 
