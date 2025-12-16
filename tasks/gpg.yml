@@ -54,7 +54,9 @@
       and bastion_encrypt_rsync_recipients must be set to reference the imported keys.
   when:
     - bastion_additional_gpg_keys | length > 0
-    - (bastion_acl_backup_gpg_keys | length == 0 or bastion_encrypt_rsync_recipients | length == 0)
+    - >-
+      (bastion_acl_backup_gpg_keys | length == 0 and bastion_acl_backup_enabled | bool) or
+       (bastion_encrypt_rsync_recipients | length == 0 and bastion_encrypt_rsync_enabled | bool)
   tags: bastion_gpg
 
 - name: gpg | Get admin GPG config file before import
