@@ -64,6 +64,14 @@
   tags: bastion_apply_config
   diff: true
 
+- name: configure | add admins to osh-admin group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: osh-admin
+    append: true
+  loop: "{{ bastion_config.adminAccounts | d([]) }}"
+  tags: bastion_admin_accounts
+
 - name: configure | Generate ACL backup configuration from template
   ansible.builtin.template:
     src: osh-backup-acl-keys.conf.j2
