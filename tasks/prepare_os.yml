@@ -4,7 +4,8 @@
 - name: prepare_os | Ensure system is up to date
   ansible.builtin.package:
     update_cache: true
-  tags: bastion_system_update
+  tags:
+    - bastion_system_update
 
 - name: prepare_os | Ensure required directories exist
   ansible.builtin.file:
@@ -13,11 +14,11 @@
     mode: "{{ item.mode }}"
   loop:
     - path: "{{ bastion_install_dir | dirname }}"
-      mode: '0755'
+      mode: "0755"
     - path: /etc/bastion
-      mode: '0751'
+      mode: "0751"
     - path: /root/backups
-      mode: '0700'
+      mode: "0700"
   tags: bastion_directories
 
 - name: prepare_os | Install required packages

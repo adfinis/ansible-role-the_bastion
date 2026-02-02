@@ -60,5 +60,5 @@
   when:
     - bastion_encrypt_home | bool
     - bastion_encryption_result is changed
-    - ansible_os_family == "Debian"
+    - ansible_facts.os_family == "Debian"
   tags: bastion_update_initramfs

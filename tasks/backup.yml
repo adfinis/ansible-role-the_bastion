@@ -3,14 +3,14 @@
 
 - name: backup | Set new backup directory name
   ansible.builtin.set_fact:
-    bastion_backup_name: "bastion-backup-{{ ansible_date_time.epoch }}"
+    bastion_backup_name: "bastion-backup-{{ ansible_facts.date_time.epoch }}"
   tags: bastion_backup_create
 
 - name: backup | Create backup directory
   ansible.builtin.file:
     path: "{{ [bastion_backup_dir, bastion_backup_name] | ansible.builtin.path_join }}"
     state: directory
-    mode: '0700'
+    mode: "0700"
   register: backup_dir
   tags: bastion_backup_create
 
@@ -41,13 +41,13 @@
 - name: backup | Create info file
   ansible.builtin.copy:
     content: |
-      Bastion backup created: {{ ansible_date_time.iso8601 }}
+      Bastion backup created: {{ ansible_facts.date_time.iso8601 }}
       Original installation: {{ bastion_install_dir }}
       Upgrading from: {{ bastion_current_version | default('unknown') }}
       Upgrading to: {{ bastion_version }}
       Backup created by: adfinis.the_bastion
     dest: "{{ backup_dir.path }}/backup-info.txt"
-    mode: '0644'
+    mode: "0644"
   tags: bastion_backup_info
 
 - name: backup | Display location

@@ -452,7 +452,7 @@ bastion_config:
   vars:
     bastion_ha_enabled: true
     bastion_ha_role: master
-    bastion_ha_master_ip: "{{ ansible_default_ipv4.address }}"
+    bastion_ha_master_ip: "{{ ansible_facts.default_ipv4.address }}"
     bastion_ha_slave_ips:
       - "192.168.1.11"
       - "192.168.1.12"
