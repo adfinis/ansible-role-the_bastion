@@ -24,7 +24,7 @@
     msg:
       - "Admin account '{{ bastion_first_admin.username }}' created successfully."
       - "You can now connect to the bastion using:"
-      - "ssh {{ bastion_first_admin.username }}@{{ ansible_default_ipv4.address | default(ansible_host) }}"
+      - "ssh {{ bastion_first_admin.username }}@{{ ansible_facts.default_ipv4.address | default(ansible_host) }}"
   when:
     - bastion_admin_creation is defined
     - bastion_admin_creation is succeeded

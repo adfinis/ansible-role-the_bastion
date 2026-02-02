@@ -1,7 +1,7 @@
 # ansible dependencies
-ansible-core==2.18.1
-ansible-lint==25.8.2
+ansible-core==2.20.*
+ansible-lint==26.1.*
 
 # molecule dependencies
-molecule==25.7.0
-molecule-plugins[podman]
+molecule==25.12.*
+molecule-plugins[podman]==25.8.*

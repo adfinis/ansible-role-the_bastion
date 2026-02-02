@@ -4,14 +4,14 @@
 - name: Validate supported OS
   ansible.builtin.assert:
     that:
-      - ansible_os_family == "Debian"
-      - ansible_distribution == "Debian"
-      - ansible_distribution_major_version in ["12", "13"]
+      - ansible_facts.os_family == "Debian"
+      - ansible_facts.distribution == "Debian"
+      - ansible_facts.distribution_major_version in ["12", "13"]
     fail_msg: "This role only supports Debian 12 and 13"
   tags: always
 
 - name: Include OS-specific variables
-  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  ansible.builtin.include_vars: "{{ ansible_facts.os_family }}.yml"
   tags: always
 
 - name: Include version detection and comparison tasks
