@@ -497,6 +497,11 @@
 #  DEFAULT: 99999
 "accountUidMax": {{ bastion_config.accountUidMax | default(99999) | to_json }},
 #
+# groupGidMin (int >= 10000)
+#     DESC: Minimum GID for bastion groups. Should be set high enough (>> accountUidMax) to avoid collision with account UIDs/GIDs.
+#  DEFAULT: 500000
+"groupGidMin": {{ bastion_config.groupGidMin | default(500000) | to_json }},
+#
 # ttyrecGroupIdOffset (int > 0)
 #     DESC: Offset to apply on user group uid to create its ``-tty`` group, should be > ``accountUidMax - accountUidMin`` to ensure there is no overlap.
 #  DEFAULT: 100000
