@@ -294,6 +294,46 @@ bastion_external_validation_ldap_ignore_tls: false  # Set to true for testing on
 
 **Important:** This is only an example template that demonstrates LDAP integration concepts. You will likely need to adjust the LDAP queries, filters, and logic to match your specific LDAP schema, security requirements, and organizational policies. The template should be reviewed and customized before production use.
 
+### Plugin Configuration
+
+The Bastion allows you to configure plugin behavior through JSON configuration files located in `/etc/bastion/plugin.$plugin.conf`
+
+```yaml
+# Configure plugins with custom settings
+bastion_plugin_config:
+  - name: selfAddIngressKey
+    config:
+      mfa_required: any
+  - name: accountCreate
+    config:
+      mfa_required: password
+      timeout: 300
+      custom_setting: value
+  - name: groupInfo
+    state: absent  # This will remove the plugin config file
+```
+
+**Backward Compatibility:**
+
+The deprecated `bastion_plugin_mfa_config` variable is still supported for backward compatibility but should be migrated to `bastion_plugin_config`:
+
+```yaml
+# do not
+bastion_plugin_mfa_config:
+  - name: selfAddIngressKey
+    mfa: true
+  - name: groupInfo
+    mfa: false
+
+# do
+bastion_plugin_config:
+  - name: selfAddIngressKey
+    config:
+      mfa_required: any
+  - name: groupInfo
+    state: absent
+```
+
 ### Backup Configuration
 
 The Bastion role supports two types of backups:
@@ -698,7 +738,8 @@ HA setup creates a master-slave cluster:
 | `bastion_install_syslog_ng` | `true` | Install syslog-ng |
 | `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_config` | `{}` | Custom bastion.conf options |
-| `bastion_plugin_mfa_config` | `[]` | List of Bastion plugins that require MFA |
+| `bastion_plugin_config` | `[]` | List of Bastion plugins with custom configuration |
+| `bastion_plugin_mfa_config` | `[]` | **DEPRECATED:** Use `bastion_plugin_config` instead |
 | `bastion_remote_syslog_enabled` | `false` | Enable remote syslog destination |
 | `bastion_remote_syslog_host` | `""` | Remote syslog server IP address |
 | `bastion_remote_syslog_port` | `514` | Remote syslog server port |

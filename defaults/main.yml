@@ -48,7 +48,21 @@ bastion_config:
 bastion_install_yubico_piv_checker: false
 bastion_install_mkhash_helper: false
 
-# MFA related configuration
+# Plugin configuration
+bastion_plugin_config: [] # List of plugins with custom configuration
+# Example:
+# bastion_plugin_config:
+#   - name: selfAddIngressKey
+#     config:
+#       mfa_required: any
+#   - name: groupListServers
+#     config:
+#       stealth_stdout: true
+#   - name: groupInfo
+#     state: absent  # Remove plugin config file
+
+# DEPRECATED: Use bastion_plugin_config instead
+# This variable is maintained for backward compatibility only
 bastion_plugin_mfa_config: [] # List of plugins that require MFA
 # Example:
 # bastion_plugin_mfa_config:
