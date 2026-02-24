@@ -93,7 +93,7 @@
     - name: Verify version file contains expected version
       ansible.builtin.assert:
         that:
-          - (bastion_version_content.content).strip() | b64decode in ['v3.21.00', 'v3.22.00']
+          - (bastion_version_content.content).strip() | b64decode in ['v3.21.00', 'v3.22.00', 'v3.23.01']
         fail_msg: "Version file does not contain expected version"
 
     - name: Check bastion home directory structure
