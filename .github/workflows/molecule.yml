@@ -1,0 +1,45 @@
+---
+name: Molecule
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  molecule:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - default
+          - gpg
+          - ha
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Enable IPv4 forwarding for Docker networking
+        run: |
+          sudo sysctl -w net.ipv4.ip_forward=1
+          sudo sysctl -w net.ipv4.conf.all.forwarding=1
+
+      - name: Run Molecule tests
+        uses: gofrolist/molecule-action@v2
+        with:
+          molecule_command: test
+          molecule_args: --scenario-name ${{ matrix.scenario }}
+          molecule_working_dir: "."

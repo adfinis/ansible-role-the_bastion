@@ -750,14 +750,14 @@ HA setup creates a master-slave cluster:
 Run Molecule tests:
 
 > [!NOTE]
-> The Bastion creates users with high UIDs which most likely exceed your `MAX_UID`. I couldn't get podman to work with those UIDs in userspace, so sudo it is (unfortunately).
+> The Bastion creates users with high UIDs which most likely exceed your `MAX_UID`. This colides with the default userid mappings from podman. This is why we are using docker to execute the molecule tests.
 
 ```bash
 # Test default scenario
-sudo molecule test
+molecule test
 
 # Test HA scenario  
-sudo molecule test -s ha
+molecule test -s ha
 ```
 
 ## License
