@@ -117,28 +117,73 @@
     - bastion_encrypt_rsync_encrypt_dir | length > 0
   tags: bastion_encrypt_rsync_dir
 
-- name: configure | Configure plugins that require MFA
-  ansible.builtin.copy:
-    src: plugin.mfa.conf
+- name: configure | Convert deprecated bastion_plugin_mfa_config to new format
+  ansible.builtin.set_fact:
+    _bastion_plugin_config_converted: >-
+      {%- set result = [] -%}
+      {%- for plugin in bastion_plugin_mfa_config | default([]) -%}
+        {%- if plugin.mfa | default(true) -%}
+          {%- set _ = result.append({
+            'name': plugin.name,
+            'config': {'mfa_required': 'any'},
+            'state': 'present'
+          }) -%}
+        {%- else -%}
+          {%- set _ = result.append({
+            'name': plugin.name,
+            'state': 'absent'
+          }) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ result }}
+  when: bastion_plugin_mfa_config | default([]) | length > 0
+  tags: bastion_plugin_config
+
+- name: configure | Merge plugin configurations (new format takes precedence)
+  ansible.builtin.set_fact:
+    _bastion_plugin_config_merged: >-
+      {%- set result = [] -%}
+      {%- for plugin in bastion_plugin_config | default([]) -%}
+        {%- if 'state' not in plugin -%}
+          {%- set _ = result.append(plugin | combine({'state': 'present'})) -%}
+        {%- else -%}
+          {%- set _ = result.append(plugin) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- set new_names = result | map(attribute='name') | list -%}
+      {%- for plugin in _bastion_plugin_config_converted | default([]) -%}
+        {%- if plugin.name not in new_names -%}
+          {%- set _ = result.append(plugin) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ result }}
+  tags: bastion_plugin_config
+
+- name: configure | Configure plugins with custom settings
+  ansible.builtin.template:
+    src: plugin.conf.j2
     dest: /etc/bastion/plugin.{{ item.name }}.conf
     owner: root
     group: root
     mode: "0644"
-  loop: "{{ bastion_plugin_mfa_config }}"
+    backup: true
+  loop: "{{ _bastion_plugin_config_merged | default([]) }}"
   when:
-    - bastion_plugin_mfa_config | length > 0
-    - item.mfa | default(true)
-  tags: bastion_mfa_plugins
+    - _bastion_plugin_config_merged | default([]) | length > 0
+    - item.state | default('present') == 'present'
+    - item.config is defined
+  tags: bastion_plugin_config
+  diff: true
 
-- name: configure | Remove existing plugin MFA config files if no longer needed
+- name: configure | Remove plugin config files when state is absent
   ansible.builtin.file:
     path: /etc/bastion/plugin.{{ item.name }}.conf
     state: absent
-  loop: "{{ bastion_plugin_mfa_config }}"
+  loop: "{{ _bastion_plugin_config_merged | default([]) }}"
   when:
-    - bastion_plugin_mfa_config | length > 0
-    - not item.mfa | default(true)
-  tags: bastion_mfa_plugins
+    - _bastion_plugin_config_merged | default([]) | length > 0
+    - item.state | default('present') == 'absent'
+  tags: bastion_plugin_config
 
 - name: configure | Ensure SSH service is enabled and started
   ansible.builtin.systemd:
