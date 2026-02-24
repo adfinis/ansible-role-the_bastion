@@ -4,8 +4,13 @@ dependency:
   options:
     requirements-file: requirements.yml
 
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+
 driver:
-  name: podman
+  name: docker
 
 platforms:
   - name: debian13-bastion-gpg
@@ -13,8 +18,6 @@ platforms:
     pre_build_image: true
     privileged: true
     command: /lib/systemd/systemd
-    capabilities:
-      - SYS_ADMIN
     cgroupns_mode: host
     userns_mode: host
     volumes:
@@ -28,8 +31,6 @@ platforms:
     pre_build_image: true
     privileged: true
     command: /lib/systemd/systemd
-    capabilities:
-      - SYS_ADMIN
     cgroupns_mode: host
     userns_mode: host
     volumes:
@@ -64,20 +65,20 @@ provisioner:
         bastion_gpg_enabled: true
         bastion_gpg_key_generate: true
         bastion_admin_gpg_key: |
-            -----BEGIN PGP PUBLIC KEY BLOCK-----
+          -----BEGIN PGP PUBLIC KEY BLOCK-----
 
-            mDMEaLdE/hYJKwYBBAHaRw8BAQdAoVX49393bHfqq2hiRB9n2Aevkga4y4GiboAX
-            UIzJLP60OUJhc3Rpb24gQWRtaW4gKFRoZSBCYXN0aW9uIEFkbWluIEtleSkgPGFk
-            bWluQGV4YW1wbGUuY29tPoiQBBMWCgA4FiEEEmJOhKLv4vv27KO+TfpJ88VnVTwF
-            Ami3RP4CGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQTfpJ88VnVTzZUwEA
-            mM0OPm17xjwcd+0I/KLLPJFkn+SeK35FQ7RK2vPXjacA/1c460/bD++SWJ/JoJbt
-            eIQal1GsWGnQUagsWnmBXZgLuDgEaLdFGRIKKwYBBAGXVQEFAQEHQN/28IPpF5SM
-            X9kzT/6IyvT20KhcWwyLWki20cGQO8tBAwEIB4h4BBgWCgAgFiEEEmJOhKLv4vv2
-            7KO+TfpJ88VnVTwFAmi3RRkCGwwACgkQTfpJ88VnVTzwMAEA+pQ+HiFiTuKIPe8S
-            IQFhl671wU8rxu5T8/IwldthwrYBAIi7CENu0TixKF+BcmuTqdLCZrl2la4985WV
-            nm0BS/oL
-            =FAxu
-            -----END PGP PUBLIC KEY BLOCK-----
+          mDMEaLdE/hYJKwYBBAHaRw8BAQdAoVX49393bHfqq2hiRB9n2Aevkga4y4GiboAX
+          UIzJLP60OUJhc3Rpb24gQWRtaW4gKFRoZSBCYXN0aW9uIEFkbWluIEtleSkgPGFk
+          bWluQGV4YW1wbGUuY29tPoiQBBMWCgA4FiEEEmJOhKLv4vv27KO+TfpJ88VnVTwF
+          Ami3RP4CGwMFCwkIBwIGFQoJCAsCBBYCAwECHgECF4AACgkQTfpJ88VnVTzZUwEA
+          mM0OPm17xjwcd+0I/KLLPJFkn+SeK35FQ7RK2vPXjacA/1c460/bD++SWJ/JoJbt
+          eIQal1GsWGnQUagsWnmBXZgLuDgEaLdFGRIKKwYBBAGXVQEFAQEHQN/28IPpF5SM
+          X9kzT/6IyvT20KhcWwyLWki20cGQO8tBAwEIB4h4BBgWCgAgFiEEEmJOhKLv4vv2
+          7KO+TfpJ88VnVTwFAmi3RRkCGwwACgkQTfpJ88VnVTzwMAEA+pQ+HiFiTuKIPe8S
+          IQFhl671wU8rxu5T8/IwldthwrYBAIi7CENu0TixKF+BcmuTqdLCZrl2la4985WV
+          nm0BS/oL
+          =FAxu
+          -----END PGP PUBLIC KEY BLOCK-----
         bastion_first_admin:
           username: bastionadmin
           ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
@@ -86,7 +87,7 @@ provisioner:
         bastion_install_syslog_ng: true
         bastion_gpg_enabled: true
         bastion_gpg_key_generate: true
-        bastion_admin_gpg_key: ""  # Must be empty when using additional keys
+        bastion_admin_gpg_key: "" # Must be empty when using additional keys
         bastion_additional_gpg_keys:
           - |
             -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -119,9 +120,9 @@ provisioner:
             =FAxu
             -----END PGP PUBLIC KEY BLOCK-----
         bastion_encrypt_rsync_recipients:
-          - ["F770BE1F"]  # Auditor key ID (first layer)
-          - ["C567553C"]  # Sysadmin key ID (second layer)
-        bastion_acl_backup_gpg_keys: "C567553C F770BE1F"  # Space-separated key IDs
+          - ["F770BE1F"] # Auditor key ID (first layer)
+          - ["C567553C"] # Sysadmin key ID (second layer)
+        bastion_acl_backup_gpg_keys: "C567553C F770BE1F" # Space-separated key IDs
         bastion_first_admin:
           username: bastionadmin
           ssh_public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICFSs/v2JZSdhMDJYd2wxmvGI5x86exT7YmGENx+q+XR example@adfinis"
