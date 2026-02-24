@@ -307,7 +307,6 @@ bastion_plugin_config:
   - name: accountCreate
     config:
       mfa_required: password
-      timeout: 300
       custom_setting: value
   - name: groupInfo
     state: absent  # This will remove the plugin config file
