@@ -3,5 +3,5 @@ ansible-core==2.20.*
 ansible-lint==26.2.*
 
 # molecule dependencies
-molecule==26.2.*
+molecule==26.3.*
 molecule-plugins[docker]==25.8.*
