@@ -5,7 +5,10 @@ on:
   release:
     types: [created, edited, published, released]
 
+permissions: {}
+
 jobs:
   release:
-    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-role-release.yaml@v0.8.0
-    secrets: inherit
+    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-role-release.yaml@eedff15b52be3c117bd5f7a28492494596399311 # v0.8.0
+    secrets:
+      galaxy_api_token: ${{ secrets.GALAXY_API_TOKEN }}
