@@ -3,7 +3,11 @@
 
 - name: configure | Run bastion installation script (new install)
   ansible.builtin.command:
-    cmd: "{{ bastion_install_dir }}/bin/admin/install --new-install"
+    cmd: >-
+      {{ bastion_install_dir }}/bin/admin/install --new-install
+      {%- for k, v in (bastion_install_extra_options | default({})).items() %}
+      --{{ k if v else 'no-' + k }}
+      {%- endfor %}
     creates: "{{ bastion_version }}"
   when: bastion_effective_install_mode == "new"
   register: bastion_install_new_result
@@ -11,7 +15,12 @@
 
 - name: configure | Run bastion installation script (upgrade)
   ansible.builtin.command:
-    cmd: "{{ bastion_install_dir }}/bin/admin/install {{ '--managed-upgrade' if bastion_upgrade_use_managed else '--upgrade' }}"
+    cmd: >-
+      {{ bastion_install_dir }}/bin/admin/install
+      --{{ bastion_upgrade_mode | default('upgrade') }}
+      {%- for k, v in (bastion_install_extra_options | default({})).items() %}
+      --{{ k if v else 'no-' + k }}
+      {%- endfor %}
     creates: "{{ bastion_version }}"
   when: bastion_effective_install_mode == "upgrade"
   register: bastion_install_upgade_result
@@ -184,6 +193,47 @@
     - _bastion_plugin_config_merged | default([]) | length > 0
     - item.state | default('present') == 'absent'
   tags: bastion_plugin_config
+
+- name: configure | Deploy custom static files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0644') }}"
+    backup: "{{ item.backup | default(false) }}"
+  loop: "{{ bastion_custom_files | rejectattr('template', 'equalto', true) | list }}"
+  register: _bastion_custom_static_result
+  tags: bastion_custom_files
+  diff: true
+
+- name: configure | Deploy custom file templates
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0644') }}"
+    backup: "{{ item.backup | default(false) }}"
+  loop: "{{ bastion_custom_files | selectattr('template', 'defined') | selectattr('template', 'equalto', true) | list }}"
+  register: _bastion_custom_template_result
+  tags: bastion_custom_files
+  diff: true
+
+- name: configure | Notify sshd restart if relevant custom files changed
+  ansible.builtin.debug:
+    msg: "Custom file change requires sshd restart"
+  changed_when: >
+    bastion_custom_files | length > 0 and
+    ((_bastion_custom_static_result.results | default([]))
+     + (_bastion_custom_template_result.results | default([])))
+    | selectattr('changed', 'equalto', true)
+    | map(attribute='item')
+    | selectattr('notify_restart_sshd', 'defined')
+    | selectattr('notify_restart_sshd', 'equalto', true)
+    | list | length > 0
+  notify: restart sshd
+  tags: bastion_custom_files
 
 - name: configure | Ensure SSH service is enabled and started
   ansible.builtin.systemd:
