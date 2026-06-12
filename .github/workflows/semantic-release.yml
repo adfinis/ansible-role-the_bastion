@@ -39,7 +39,7 @@ jobs:
           ref: v${{ needs.semantic-release.outputs.version }}
           persist-credentials: false
 
-      - name: Upload collection to Ansible Galaxy
-        uses: ansible/ansible-publish-action@a56a0328c92c1d4feedf5bd7f7cf7ec7a4ae3f09 # v1.0.0
+      - name: Upload role to Ansible Galaxy
+        uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-role-release.yaml@e64e43cab282caa112c5fa5df4d43fd82ed8711f # v0.9.0
         with:
-          api_key: ${{ secrets.GALAXY_API_KEY }}
+          galaxy_api_token: ${{ secrets.GALAXY_API_KEY }}
