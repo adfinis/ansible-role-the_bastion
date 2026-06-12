@@ -61,16 +61,6 @@ bastion_plugin_config: [] # List of plugins with custom configuration
 #   - name: groupInfo
 #     state: absent  # Remove plugin config file
 
-# DEPRECATED: Use bastion_plugin_config instead
-# This variable is maintained for backward compatibility only
-bastion_plugin_mfa_config: [] # List of plugins that require MFA
-# Example:
-# bastion_plugin_mfa_config:
-#   - name: selfAddIngressKey
-#     mfa: true
-#   - name: groupInfo
-#     mfa: false
-
 # Backup configuration
 bastion_backup_encryption_enabled: true
 bastion_backup_dir: /root/ansible-backups # Ansible role backups (separate from bastion backups)

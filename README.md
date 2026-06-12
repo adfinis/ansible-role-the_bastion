@@ -312,27 +312,6 @@ bastion_plugin_config:
     state: absent  # This will remove the plugin config file
 ```
 
-**Backward Compatibility:**
-
-The deprecated `bastion_plugin_mfa_config` variable is still supported for backward compatibility but should be migrated to `bastion_plugin_config`:
-
-```yaml
-# do not
-bastion_plugin_mfa_config:
-  - name: selfAddIngressKey
-    mfa: true
-  - name: groupInfo
-    mfa: false
-
-# do
-bastion_plugin_config:
-  - name: selfAddIngressKey
-    config:
-      mfa_required: any
-  - name: groupInfo
-    state: absent
-```
-
 ### Backup Configuration
 
 The Bastion role supports two types of backups:
@@ -738,7 +717,6 @@ HA setup creates a master-slave cluster:
 | `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_config` | `{}` | Custom bastion.conf options |
 | `bastion_plugin_config` | `[]` | List of Bastion plugins with custom configuration |
-| `bastion_plugin_mfa_config` | `[]` | **DEPRECATED:** Use `bastion_plugin_config` instead |
 | `bastion_remote_syslog_enabled` | `false` | Enable remote syslog destination |
 | `bastion_remote_syslog_host` | `""` | Remote syslog server IP address |
 | `bastion_remote_syslog_port` | `514` | Remote syslog server port |

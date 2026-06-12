@@ -97,12 +97,6 @@ provisioner:
               stealth_stdout: true
           - name: accountDelete
             state: absent
-        # Test backward compatibility with deprecated format
-        bastion_plugin_mfa_config:
-          - name: groupInfo
-            mfa: false
-          - name: accountCreate
-            mfa: true
         bastion_remote_syslog_enabled: true
         bastion_remote_syslog_host: "127.0.0.1"
         bastion_remote_syslog_port: 514
