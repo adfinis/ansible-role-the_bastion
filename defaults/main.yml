@@ -117,7 +117,61 @@ bastion_encrypt_rsync_delay_before_remove_days: "0" # Days before removing local
 
 # Upgrade specific settings
 bastion_upgrade_backup_before: true
-bastion_upgrade_use_managed: false # Use --managed-upgrade instead of --upgrade
+
+# Base mode passed to the bastion install script on upgrades.
+# One of: upgrade, managed-upgrade, minimal, nothing
+#   - upgrade:         apply new bastion code changes, avoid touching system config (recommended)
+#   - managed-upgrade: lighter upgrade suitable when a config manager handles system files
+#   - minimal:         prevent the script from touching anything not directly bastion-related
+#   - nothing:         no-op base; combine with bastion_install_extra_options for surgical changes
+# NOTE: bastion_upgrade_use_managed (bool) is deprecated in favour of this variable.
+#       Set bastion_upgrade_mode: managed-upgrade to replicate bastion_upgrade_use_managed: true.
+bastion_upgrade_mode: "upgrade"
+
+# Per-option overrides appended to the install script command for both new-install and upgrade runs.
+# Dict keys are option names exactly as the script accepts them (without the leading --).
+# A true value passes --<option>; a false value passes --no-<option>.
+#
+# Available options (see `bin/admin/install --help` for the full list):
+#   modify-banner, modify-sshd-config, modify-ssh-config, modify-motd, modify-umask,
+#   modify-pam-sshd, modify-pam-lastlog, remove-weak-moduli, regen-hostkeys,
+#   generate-mfa-secret, logrotate, overwrite-logrotate, cron, overwrite-cron,
+#   syslog-ng, overwrite-syslog-ng, check-ttyrec, install-fake-ttyrec,
+#   init, systemd-units, profile, install-selinux-module
+#
+# Example - let the bastion script deploy its hardened sshd / ssh client configs:
+# bastion_install_extra_options:
+#   modify-sshd-config: true
+#   modify-ssh-config: true
+#   regen-hostkeys: false   # skip regenerating host keys on new install
+bastion_install_extra_options: {}
+
+# Custom files and templates to deploy on the target host.
+# Each entry supports:
+#   src:                 Source path resolved via Ansible's normal file lookup.
+#                        Static files: place in your playbook's files/ directory.
+#                        Templates:    place in your playbook's templates/ directory.
+#   dest:                Absolute destination path on the target host (required).
+#   template:            Render src as a Jinja2 template. Default: false.
+#   owner:               File owner. Default: root.
+#   group:               File group. Default: root.
+#   mode:                File permissions. Default: "0644".
+#   backup:              Keep a dated backup when the file changes. Default: false.
+#   notify_restart_sshd: Trigger the 'restart sshd' handler when this file
+#                        changes. Default: false.
+#
+# Example - deploy a custom hardened sshd_config and ssh_config:
+# bastion_custom_files:
+#   - src: sshd_config.j2
+#     dest: /etc/ssh/sshd_config
+#     mode: "0600"
+#     template: true
+#     notify_restart_sshd: true
+#   - src: ssh_config
+#     dest: /etc/ssh/ssh_config
+#     mode: "0644"
+#     notify_restart_sshd: true
+bastion_custom_files: []
 
 # High Availability / Clustering configuration
 bastion_ha_enabled: false
