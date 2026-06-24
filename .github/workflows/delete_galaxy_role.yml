@@ -9,6 +9,6 @@ permissions: {}
 
 jobs:
   delete:
-    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-DELETE-role.yaml@eedff15b52be3c117bd5f7a28492494596399311 # v0.8.0
+    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-DELETE-role.yaml@e64e43cab282caa112c5fa5df4d43fd82ed8711f # v0.9.0
     secrets:
       galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}
