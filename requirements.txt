@@ -1,6 +1,6 @@
 # ansible dependencies
 ansible-core==2.21.*
-ansible-lint==26.4.*
+ansible-lint==26.6.*
 
 # molecule dependencies
 molecule==26.6.*
