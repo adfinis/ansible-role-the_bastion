@@ -39,6 +39,37 @@
   notify: restart sshd
   tags: bastion_external_validation
 
+- name: external_validation | Ensure LDAP cache base directory exists
+  ansible.builtin.file:
+    path: "{{ bastion_external_validation_ldap_cache_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "1777"
+  when:
+    - bastion_external_validation_enabled
+    - bastion_external_validation_ldap_server | length > 0
+  tags: bastion_external_validation
+
+- name: external_validation | Recreate LDAP cache base directory on boot
+  ansible.builtin.copy:
+    content: "d {{ bastion_external_validation_ldap_cache_dir }} 1777 root root -\n"
+    dest: /etc/tmpfiles.d/bastion-ldap-cache.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - bastion_external_validation_enabled
+    - bastion_external_validation_ldap_server | length > 0
+  tags: bastion_external_validation
+
+- name: external_validation | Remove LDAP cache tmpfiles config when disabled
+  ansible.builtin.file:
+    path: /etc/tmpfiles.d/bastion-ldap-cache.conf
+    state: absent
+  when: not bastion_external_validation_enabled or bastion_external_validation_ldap_server | length == 0
+  tags: bastion_external_validation
+
 - name: external_validation | Remove validation program when disabled
   ansible.builtin.file:
     path: "{{ bastion_external_validation_program_path }}"

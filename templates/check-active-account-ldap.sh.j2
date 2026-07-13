@@ -27,7 +27,11 @@ export LDAPTLS_REQCERT=never
 LDAP_REQUIRED_GROUP="{{ bastion_external_validation_ldap_required_group }}"
 {% endif %}
 
-CACHE_FILE="{{ bastion_external_validation_ldap_cache_file }}"
+# The script runs as the connecting account, so each user gets their own
+# cache directory below the world-writable base directory.
+CACHE_BASE_DIR="{{ bastion_external_validation_ldap_cache_dir }}"
+CACHE_DIR="$CACHE_BASE_DIR/$(id -un)"
+CACHE_FILE="$CACHE_DIR/active_accounts.cache"
 CACHE_MAX_AGE="{{ bastion_external_validation_ldap_cache_ttl }}"  # in seconds
 
 # Function to log messages
@@ -45,6 +49,29 @@ if [[ -z "$ACCOUNT" ]]; then
 fi
 
 log_message "info" "Validating account: $ACCOUNT"
+
+setup_cache_dir() {
+    if [[ ! -d "$CACHE_BASE_DIR" ]]; then
+        mkdir -p "$CACHE_BASE_DIR" 2>/dev/null
+        chmod 1777 "$CACHE_BASE_DIR" 2>/dev/null
+    fi
+
+    if [[ -L "$CACHE_DIR" ]]; then
+        log_message "warn" "Cache directory $CACHE_DIR is a symlink, refusing to use cache"
+        return 1
+    fi
+    if [[ ! -d "$CACHE_DIR" ]]; then
+        mkdir -m 0700 "$CACHE_DIR" 2>/dev/null || {
+            log_message "warn" "Failed to create cache directory: $CACHE_DIR"
+            return 1
+        }
+    fi
+    if [[ ! -O "$CACHE_DIR" ]]; then
+        log_message "warn" "Cache directory $CACHE_DIR is not owned by $(id -un), refusing to use cache"
+        return 1
+    fi
+    return 0
+}
 
 # Check cache first
 check_cache() {
@@ -100,15 +127,10 @@ validate_ldap() {
 
 # Update cache with active accounts
 update_cache() {
-    local temp_cache="/tmp/bastion_cache.$$"
-    local updated=false    
-    
-    # Ensure cache directory exists
-    mkdir -p "$(dirname "$CACHE_FILE")" 2>/dev/null || {
-        log_message "warn" "Failed to create cache directory: $(dirname "$CACHE_FILE")"
-        return 2
-    }
-    
+    local temp_cache="$CACHE_DIR/.active_accounts.cache.$$"
+    local updated=false
+
+
     # Try to get active accounts from LDAP
     if [[ -n "$LDAP_SERVER" ]] && command -v ldapsearch >/dev/null 2>&1; then
         local ldap_cmd="ldapsearch -x -H ldap://$LDAP_SERVER -b $LDAP_BASE_DN"
@@ -146,8 +168,15 @@ update_cache() {
     return 0
 }
 
-check_cache
-cache_result=$?
+if setup_cache_dir; then
+    cache_usable=true
+    check_cache
+    cache_result=$?
+else
+    # No usable cache: fall back to direct LDAP validation only
+    cache_usable=false
+    cache_result=2
+fi
 
 if [[ $cache_result -eq 0 ]]; then
     # Found in cache
@@ -159,14 +188,20 @@ else
     # Cache miss or stale, try direct validation
     validate_ldap
     ldap_result=$?
-    
+
     if [[ $ldap_result -eq 0 ]]; then
         # Update cache in background for next time
-        update_cache &
+        if [[ "$cache_usable" == "true" ]]; then
+            update_cache &
+        fi
         exit 0
     elif [[ $ldap_result -eq 1 ]]; then
         exit 1
     else
+        if [[ "$cache_usable" != "true" ]]; then
+            log_message "err" "Validation failed for account: $ACCOUNT (LDAP unavailable, no usable cache)"
+            exit 3
+        fi
         log_message "warn" "Direct validation methods failed, attempting cache update"
         if update_cache; then
             if grep -q "^${ACCOUNT}$" "$CACHE_FILE" 2>/dev/null; then

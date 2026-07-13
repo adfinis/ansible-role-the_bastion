@@ -285,7 +285,9 @@ bastion_external_validation_ldap_bind_password: "{{ vault_ldap_password }}"
 bastion_external_validation_ldap_required_group: "cn=bastion-users,ou=groups,dc=example,dc=com"
 
 # Caching configuration
-bastion_external_validation_ldap_cache_file: "/var/cache/bastion/active_accounts.cache"
+# The validation script runs as the connecting account, so results are cached
+# per user in <cache_dir>/<username>/active_accounts.cache, owned by that user.
+bastion_external_validation_ldap_cache_dir: "/tmp/bastion_ldap_cache"
 bastion_external_validation_ldap_cache_ttl: 300  # 5 minutes
 
 # TLS configuration
@@ -704,8 +706,8 @@ HA setup creates a master-slave cluster:
 | `bastion_external_validation_ldap_bind_password` | `""` | LDAP bind password (optional) |
 | `bastion_external_validation_ldap_ignore_tls` | `false` | Ignore TLS certificate validation (testing only) |
 | `bastion_external_validation_ldap_required_group` | `""` | Required LDAP group membership (optional) |
-| `bastion_external_validation_ldap_cache_file` | `/var/cache/bastion/active_accounts.cache` | Cache file for LDAP results |
-| `bastion_external_validation_ldap_cache_ttl` | `300` | Cache TTL in seconds |
+| `bastion_external_validation_ldap_cache_dir` | `/tmp/bastion_ldap_cache` | Base directory for per-user LDAP result caches |
+| `bastion_external_validation_ldap_cache_ttl` | `900` | Cache TTL in seconds |
 
 ### Other Features
 
