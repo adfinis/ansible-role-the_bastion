@@ -4,4 +4,4 @@ ansible-lint==26.9.*
 
 # molecule dependencies
 molecule==26.8.*
-molecule-plugins[docker]==26.7.*
+molecule-plugins[docker]==26.9.*
