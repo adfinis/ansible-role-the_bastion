@@ -42,7 +42,7 @@ jobs:
           sudo sysctl -w net.ipv4.conf.all.forwarding=1
 
       - name: Run Molecule tests
-        uses: gofrolist/molecule-action@835186b6b6b574ef4001ad2b545914c92e771183 # v2.9.13
+        uses: gofrolist/molecule-action@375239d5cf0d251875cfb5f797209e65cf3d0943 # v2.9.14
         with:
           molecule_command: test
           molecule_args: --scenario-name ${{ matrix.scenario }}
