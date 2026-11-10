@@ -38,6 +38,6 @@ jobs:
   ansible-galaxy:
     needs: semantic-release
     if: needs.semantic-release.outputs.version != ''
-    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-role-release.yaml@a8202adab97bea9b476bf32da11a835cf216d8b9 # v0.11.1
+    uses: adfinis/github-workflows-bareos/.github/workflows/ansible-galaxy-role-release.yaml@1c3254f70abac8c7aa282dfd1498f6d387921463 # v0.11.2
     secrets:
       galaxy_api_key: ${{ secrets.GALAXY_API_KEY }}
