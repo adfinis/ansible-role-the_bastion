@@ -133,7 +133,7 @@ update_cache() {
 
     # Try to get active accounts from LDAP
     if [[ -n "$LDAP_SERVER" ]] && command -v ldapsearch >/dev/null 2>&1; then
-        local ldap_cmd="ldapsearch -x -H ldap://$LDAP_SERVER -b $LDAP_BASE_DN"
+        local ldap_cmd="ldapsearch -x -H ldaps://$LDAP_SERVER -b $LDAP_BASE_DN"
         if [[ -n "$LDAP_BIND_DN" && -n "$LDAP_BIND_PASSWORD" ]]; then
             ldap_cmd="$ldap_cmd -D $LDAP_BIND_DN -w $LDAP_BIND_PASSWORD"
         fi
@@ -145,7 +145,8 @@ update_cache() {
         fi
         
         # Get accounts that match the filter
-        if $ldap_cmd "$filter" uid 2>/dev/null | grep "^uid:" | cut -d' ' -f2 > "$temp_cache"; then
+        $ldap_cmd "$filter" uid 2>/dev/null | grep "^uid:" | cut -d' ' -f2 > "$temp_cache"
+        if [[ -s "$temp_cache" ]]; then
             if [[ -n "$LDAP_REQUIRED_GROUP" ]]; then
                 log_message "info" "Updated cache from LDAP ($(wc -l < "$temp_cache") non-expiring accounts in required group)"
             else
