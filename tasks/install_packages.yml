@@ -15,7 +15,7 @@
   ansible.builtin.file:
     path: /etc/bastion/.packages_checked
     state: touch
-    mode: '0644'
+    mode: "0644"
   when:
     - bastion_packages_check is succeeded
     - bastion_packages_check.changed
@@ -24,22 +24,19 @@
 - name: install_packages | Install ovh-ttyrec
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install-ttyrec.sh -a"
-    creates: /usr/bin/ttyrec
-  register: bastion_ttyrec_install
+  changed_when: true
   tags: bastion_install_ttyrec
 
 - name: install_packages | Install yubico-piv-checker (optional)
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install-yubico-piv-checker.sh -a"
-    creates: /usr/bin/yubico-piv-checker
   when: bastion_install_yubico_piv_checker | bool
-  register: bastion_yubico_install
+  changed_when: true
   tags: bastion_install_yubico
 
 - name: install_packages | Install mkhash-helper (optional)
   ansible.builtin.command:
     cmd: "{{ bastion_install_dir }}/bin/admin/install-mkhash-helper.sh -a"
-    creates: /usr/bin/the-bastion-mkhash-helper
   when: bastion_install_mkhash_helper | bool
-  register: bastion_mkhash_install
+  changed_when: true
   tags: bastion_install_mkhash

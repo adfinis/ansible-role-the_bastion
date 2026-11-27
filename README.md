@@ -716,6 +716,7 @@ HA setup creates a master-slave cluster:
 | `bastion_encrypt_home` | `false` | Encrypt /home with LUKS |
 | `bastion_encryption_passphrase` | `""` | LUKS encryption passphrase |
 | `bastion_install_syslog_ng` | `true` | Install syslog-ng |
+| `bastion_upgrade_tools` | `false` | Upgrade the optional tooling (ovh-ttyrec, yubico-piv-checker and mkhash-helper) to their latest version. |
 | `bastion_install_optional_packages` | `true` | Install various optional packages (like `mosh` and `libpam-google-authenticator`) |
 | `bastion_config` | `{}` | Custom bastion.conf options |
 | `bastion_plugin_config` | `[]` | List of Bastion plugins with custom configuration |

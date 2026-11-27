@@ -51,7 +51,7 @@
 
 - name: Include package installation tasks
   ansible.builtin.include_tasks: install_packages.yml
-  when: bastion_effective_install_mode != "skip"
+  when: bastion_effective_install_mode != "skip" or bastion_upgrade_tools | bool
   tags:
     - bastion
     - bastion_packages
