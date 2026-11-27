@@ -108,6 +108,9 @@ bastion_encrypt_rsync_delay_before_remove_days: "0" # Days before removing local
 # Upgrade specific settings
 bastion_upgrade_backup_before: true
 
+# Upgrade the optional tooling (ovh-ttyrec, yubico-piv-checker and mkhash-helper) to their latest version.
+bastion_upgrade_tools: false
+
 # Base mode passed to the bastion install script on upgrades.
 # One of: upgrade, managed-upgrade, minimal, nothing
 #   - upgrade:         apply new bastion code changes, avoid touching system config (recommended)
